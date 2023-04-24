@@ -33,7 +33,7 @@ func init() {
 		rid := uint32(len(states))
 		states = append(states, s)
 
-		stateRuntimeIDs[internal.HashState(s)] = rid
+		stateRuntimeIDs[internal.HashState(blockupgrader.Upgrade(s))] = rid
 		runtimeIDToState[rid] = s
 	}
 }
