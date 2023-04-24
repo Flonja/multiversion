@@ -3,10 +3,10 @@ module github.com/flonja/multiversion
 go 1.20
 
 require (
-	github.com/df-mc/dragonfly v0.9.4
+	github.com/df-mc/dragonfly v0.9.5-0.20230423110228-77cb3d49debb
 	github.com/df-mc/worldupgrader v1.0.3
 	github.com/sandertv/go-raknet v1.12.0
-	github.com/sandertv/gophertunnel v1.28.1
+	github.com/sandertv/gophertunnel v1.28.2
 	github.com/sirupsen/logrus v1.9.0
 )
 
