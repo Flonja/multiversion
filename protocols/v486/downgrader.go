@@ -2,10 +2,13 @@ package v486
 
 import (
 	"github.com/flonja/multiversion/internal/chunk"
+	"github.com/flonja/multiversion/internal/item"
 	"github.com/flonja/multiversion/protocols/latest"
 	"github.com/flonja/multiversion/protocols/v486/mappings"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
+
+const legacyItemVersion = 71
 
 // downgradeBlockRuntimeID downgrades latest block runtime IDs to a legacy block runtime ID.
 func downgradeBlockRuntimeID(input uint32) uint32 {
@@ -23,13 +26,27 @@ func downgradeBlockRuntimeID(input uint32) uint32 {
 // downgradeItem downgrades the input item stack to a legacy item stack.
 func downgradeItem(input protocol.ItemStack) protocol.ItemStack {
 	name, _ := latest.ItemRuntimeIDToName(input.NetworkID)
-	networkID, _ := mappings.ItemNameToRuntimeID(name)
+	i := item.Downgrade(item.Item{
+		Name:     name,
+		Metadata: input.MetadataValue,
+		Version:  latestItemVersion,
+	}, legacyItemVersion)
+	blockRuntimeId := uint32(0)
+	if latestBlockState, ok := item.BlockStateFromItem(i); ok {
+		rid, _ := latest.StateToRuntimeID(latestBlockState)
+		blockRuntimeId = downgradeBlockRuntimeID(rid)
+	}
+	networkID, ok := mappings.ItemNameToRuntimeID(name)
+	if !ok {
+		networkID, _ = mappings.ItemNameToRuntimeID("minecraft:air")
+		blockRuntimeId = legacyAirRID
+	}
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
 			NetworkID:     networkID,
-			MetadataValue: input.MetadataValue,
+			MetadataValue: i.Metadata,
 		},
-		BlockRuntimeID: input.BlockRuntimeID,
+		BlockRuntimeID: int32(blockRuntimeId),
 		Count:          input.Count,
 		NBTData:        input.NBTData,
 		CanBePlacedOn:  input.CanBePlacedOn,
