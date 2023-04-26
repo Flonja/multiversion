@@ -25,6 +25,10 @@ func downgradeBlockRuntimeID(input uint32) uint32 {
 
 // downgradeItem downgrades the input item stack to a legacy item stack.
 func downgradeItem(input protocol.ItemStack) protocol.ItemStack {
+	if input.NetworkID == int32(latestAirRID) {
+		return protocol.ItemStack{}
+	}
+
 	name, _ := latest.ItemRuntimeIDToName(input.NetworkID)
 	i := item.Downgrade(item.Item{
 		Name:     name,

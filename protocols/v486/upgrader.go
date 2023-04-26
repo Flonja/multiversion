@@ -24,6 +24,10 @@ func upgradeBlockRuntimeID(input uint32) uint32 {
 
 // upgradeItem upgrades the input item stack to a legacy item stack.
 func upgradeItem(input protocol.ItemStack) protocol.ItemStack {
+	if input.NetworkID == int32(legacyAirRID) {
+		return protocol.ItemStack{}
+	}
+
 	name, _ := mappings.ItemRuntimeIDToName(input.NetworkID)
 	i := item.Upgrade(item.Item{
 		Name:     name,
