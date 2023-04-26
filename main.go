@@ -6,6 +6,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	_ "github.com/flonja/multiversion/protocols"
 	v486 "github.com/flonja/multiversion/protocols/v486"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
