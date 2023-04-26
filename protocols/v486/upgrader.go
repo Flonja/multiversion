@@ -57,6 +57,6 @@ func upgradeItem(input protocol.ItemStack) protocol.ItemStack {
 func upgradeItemInstance(input protocol.ItemInstance) protocol.ItemInstance {
 	return protocol.ItemInstance{
 		StackNetworkID: input.StackNetworkID,
-		Stack:          downgradeItem(input.Stack),
+		Stack:          upgradeItem(input.Stack),
 	}
 }
