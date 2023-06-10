@@ -159,11 +159,6 @@ func upgradeSubChunk(sub *chunk.SubChunk) *chunk.SubChunk {
 			for z := uint8(0); z < 16; z++ {
 				for y := uint8(0); y < 16; y++ {
 					legacyRuntimeID := layer.At(x, y, z)
-					if legacyRuntimeID == mappings.AirRID {
-						// Don't bother with air.
-						continue
-					}
-
 					upgradedLayer.Set(x, y, z, upgradeBlockRuntimeID(legacyRuntimeID))
 				}
 			}

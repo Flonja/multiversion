@@ -161,11 +161,6 @@ func downgradeSubChunk(input *chunk.SubChunk) *chunk.SubChunk {
 			for z := uint8(0); z < 16; z++ {
 				for y := uint8(0); y < 16; y++ {
 					latestRuntimeID := layer.At(x, y, z)
-					if latestRuntimeID == latest.AirRID {
-						// Don't bother with air.
-						continue
-					}
-
 					downgradedLayer.Set(x, y, z, downgradeBlockRuntimeID(latestRuntimeID))
 				}
 			}
@@ -408,7 +403,7 @@ func downgradeWorldPackets(pks []packet.Packet, data minecraft.GameData, cache b
 				ind := byte(0)
 				subChunk, err := chunk.DecodeSubChunk(latest.AirRID, r, buf, &ind, chunk.NetworkEncoding)
 				if err != nil {
-					fmt.Println(err)
+					// Has a possibility to be a biome, ignore then
 					continue
 				}
 				subChunk = downgradeSubChunk(subChunk)
