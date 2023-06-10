@@ -35,16 +35,13 @@ func (p Protocol) Encryption(key [32]byte) packet.Encryption {
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
 	switch pk := pk.(type) {
-	case *packet.ClientCacheStatus:
-		// TODO: REMOVE ONCE DONE
-		pk.Enabled = false
 	case *legacypacket.Emote:
 		return []packet.Packet{
 			&packet.Emote{
 				EntityRuntimeID: pk.EntityRuntimeID,
 				EmoteID:         pk.EmoteID,
 				XUID:            conn.IdentityData().XUID,
-				PlatformID:      "", // conn.IdentityData().TitleID??
+				PlatformID:      conn.ClientData().PlatformOnlineID,
 				Flags:           pk.Flags,
 			},
 		}
