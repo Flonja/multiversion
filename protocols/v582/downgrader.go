@@ -374,29 +374,29 @@ func downgradeWorldPackets(pks []packet.Packet, data minecraft.GameData, cache b
 				continue
 			}
 			pk.RawPayload = payload
-		//case *packet.SubChunk:
-		//	if cache {
-		//		break
-		//	}
-		//	r := world.Overworld.Range()
-		//	if oldFormat {
-		//		r = cube.Range{0, 255}
-		//	}
-		//
-		//	for i, entry := range pk.SubChunkEntries {
-		//		if entry.Result == protocol.SubChunkResultSuccess {
-		//			buf := bytes.NewBuffer(entry.RawPayload)
-		//			ind := byte(i)
-		//			subChunk, err := chunk.DecodeSubChunk(latest.AirRID, r, buf, &ind, chunk.NetworkEncoding)
-		//			if err != nil {
-		//				fmt.Println(err)
-		//				continue
-		//			}
-		//			subChunk = downgradeSubChunk(subChunk)
-		//			entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
-		//			pk.SubChunkEntries[ind] = entry
-		//		}
-		//	}
+		case *packet.SubChunk:
+			if cache {
+				break
+			}
+			r := world.Overworld.Range()
+			if oldFormat {
+				r = cube.Range{0, 255}
+			}
+
+			for i, entry := range pk.SubChunkEntries {
+				if entry.Result == protocol.SubChunkResultSuccess {
+					buf := bytes.NewBuffer(entry.RawPayload)
+					ind := byte(i)
+					subChunk, err := chunk.DecodeSubChunk(latest.AirRID, r, buf, &ind, chunk.NetworkEncoding)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+					subChunk = downgradeSubChunk(subChunk)
+					entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+					pk.SubChunkEntries[i] = entry
+				}
+			}
 		case *packet.ClientCacheMissResponse:
 			r := world.Overworld.Range()
 			if oldFormat {
