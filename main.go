@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
+	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
@@ -46,9 +47,14 @@ func main() {
 
 	srv := conf.New()
 	srv.CloseOnProgramEnd()
+	srv.World().StopTime()
+	srv.World().SetTime(1000)
 
 	srv.Listen()
-	for srv.Accept(nil) {
+	for srv.Accept(func(p *player.Player) {
+		p.ShowCoordinates()
+		p.SetGameMode(world.GameModeCreative)
+	}) {
 	}
 }
 
