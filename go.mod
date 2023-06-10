@@ -7,6 +7,7 @@ require (
 	github.com/df-mc/worldupgrader v1.0.3
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0
+	github.com/samber/lo v1.38.1
 	github.com/sandertv/go-raknet v1.12.0
 	github.com/sandertv/gophertunnel v1.28.2
 	github.com/sirupsen/logrus v1.9.0
@@ -21,9 +22,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/muhammadmuzzammil1998/jsonc v1.0.0 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/samber/lo v1.38.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
@@ -39,4 +38,4 @@ require (
 
 replace github.com/sandertv/go-raknet => github.com/tedacmc/tedac-raknet v0.0.4
 
-replace github.com/sandertv/gophertunnel => github.com/tedacmc/tedac-gophertunnel v0.0.23
+replace github.com/sandertv/gophertunnel => github.com/everblademc/tedac-gophertunnel v0.0.1

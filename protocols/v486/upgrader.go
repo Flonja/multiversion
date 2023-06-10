@@ -7,7 +7,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
-const latestItemVersion = 91
+const latestItemVersion = 101
 
 // upgradeBlockRuntimeID upgrades legacy block runtime IDs to a latest block runtime ID.
 func upgradeBlockRuntimeID(input uint32) uint32 {
