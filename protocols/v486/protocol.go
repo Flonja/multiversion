@@ -3,8 +3,8 @@ package v486
 import (
 	"bytes"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
-	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/flonja/multiversion/internal/chunk"
 	"github.com/flonja/multiversion/protocols/latest"
 	"github.com/flonja/multiversion/protocols/v486/mappings"
@@ -44,13 +44,6 @@ func (p Protocol) Packets() packet.Pool {
 func (p Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
 }
-
-var (
-	// latestAirRID is the runtime ID of the air block in the latest version of the game.
-	latestAirRID, _ = latest.StateToRuntimeID(blockupgrader.BlockState{Name: "minecraft:air"})
-	// legacyAirRID is the runtime ID of the air block in the legacy version of the game.
-	legacyAirRID, _ = mappings.StateToRuntimeID(blockupgrader.BlockState{Name: "minecraft:air"})
-)
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, _ *minecraft.Conn) []packet.Packet {
 	switch pk := pk.(type) {
@@ -98,36 +91,43 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []pa
 	// TODO: add UpdateAbilities
 	case *packet.LevelChunk:
 		count := int(pk.SubChunkCount)
-		if pk.SubChunkCount == protocol.SubChunkRequestModeLimited {
-			count = int(pk.HighestSubChunk)
+		if count == protocol.SubChunkRequestModeLimitless || count == protocol.SubChunkRequestModeLimited {
+			break
 		}
-		fmt.Println(count)
-		fmt.Println(pk.CacheEnabled)
 
 		buf := bytes.NewBuffer(pk.RawPayload)
 		oldFormat := conn.GameData().BaseGameVersion == "1.17.40"
-		c, err := chunk.NetworkDecode(latestAirRID, buf, count, oldFormat, world.Overworld.Range())
+		c, err := chunk.NetworkDecode(latest.AirRID, buf, count, oldFormat, world.Overworld.Range())
 		if err != nil {
 			fmt.Println(err)
 			return nil
 		}
 		downgradeChunk(c, oldFormat)
 
-		payload, err := chunk.NetworkEncode(legacyAirRID, c, oldFormat)
+		payload, err := chunk.NetworkEncode(mappings.AirRID, c, oldFormat)
 		if err != nil {
 			fmt.Println(err)
 			return nil
 		}
+		pk.RawPayload = payload
+	case *packet.SubChunk:
+		r := cube.Range{-64, 319}
+		if conn.GameData().BaseGameVersion == "1.17.40" {
+			r = cube.Range{0, 255}
+		}
 
-		return []packet.Packet{
-			&packet.LevelChunk{
-				Position:        pk.Position,
-				HighestSubChunk: pk.HighestSubChunk,
-				SubChunkCount:   pk.SubChunkCount,
-				CacheEnabled:    pk.CacheEnabled,
-				BlobHashes:      pk.BlobHashes,
-				RawPayload:      payload,
-			},
+		for i, entry := range pk.SubChunkEntries {
+			ind := byte(i)
+			if entry.Result != protocol.SubChunkResultSuccessAllAir {
+				buf := bytes.NewBuffer(entry.RawPayload)
+				subChunk, err := chunk.DecodeSubChunk(latest.AirRID, r, buf, &ind, chunk.NetworkEncoding)
+				if err != nil {
+					return nil
+				}
+				subChunk = downgradeSubChunk(subChunk)
+
+				pk.SubChunkEntries[i].RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+			}
 		}
 	case *packet.UpdateBlock:
 		pk.NewBlockRuntimeID = downgradeBlockRuntimeID(pk.NewBlockRuntimeID)
@@ -143,6 +143,11 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) []pa
 	case *packet.AddItemActor:
 		pk.Item = downgradeItemInstance(pk.Item)
 		pk.EntityMetadata = downgradeEntityMetadata(pk.EntityMetadata)
+	case *packet.CraftingData:
+		return nil
+	case *packet.SetActorData:
+		pk.EntityMetadata = downgradeEntityMetadata(pk.EntityMetadata)
+		return nil
 	case *packet.CraftingEvent:
 		pk.Input = lo.Map(pk.Input, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
 			return downgradeItemInstance(item)

@@ -5,6 +5,8 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
 )
 
+const ItemVersion = 121
+
 var (
 	//go:embed item_runtime_ids.nbt
 	itemRuntimeIDData []byte

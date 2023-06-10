@@ -9,6 +9,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world"
 	_ "github.com/flonja/multiversion/protocols"
 	v486 "github.com/flonja/multiversion/protocols/v486"
+	v582 "github.com/flonja/multiversion/protocols/v582"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 )
@@ -34,7 +35,7 @@ func main() {
 				ResourcePacks:          conf.Resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{v486.Protocol{}},
+				AcceptedProtocols:      []minecraft.Protocol{v486.Protocol{}, v582.Protocol{}},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {

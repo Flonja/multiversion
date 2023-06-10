@@ -1,6 +1,7 @@
 package v486
 
 import (
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/flonja/multiversion/internal/chunk"
 	"github.com/flonja/multiversion/internal/item"
 	"github.com/flonja/multiversion/protocols/latest"
@@ -9,24 +10,22 @@ import (
 	"math"
 )
 
-const legacyItemVersion = 71
-
 // downgradeBlockRuntimeID downgrades latest block runtime IDs to a legacy block runtime ID.
 func downgradeBlockRuntimeID(input uint32) uint32 {
 	state, ok := latest.RuntimeIDToState(input)
 	if !ok {
-		return legacyAirRID
+		return mappings.AirRID
 	}
 	runtimeID, ok := mappings.StateToRuntimeID(state)
 	if !ok {
-		return legacyAirRID
+		return mappings.AirRID
 	}
 	return runtimeID
 }
 
 // downgradeItem downgrades the input item stack to a legacy item stack.
 func downgradeItem(input protocol.ItemStack) protocol.ItemStack {
-	if input.NetworkID == int32(latestAirRID) {
+	if input.NetworkID == int32(latest.AirRID) {
 		return protocol.ItemStack{}
 	}
 
@@ -34,8 +33,8 @@ func downgradeItem(input protocol.ItemStack) protocol.ItemStack {
 	i := item.Downgrade(item.Item{
 		Name:     name,
 		Metadata: input.MetadataValue,
-		Version:  latestItemVersion,
-	}, legacyItemVersion)
+		Version:  latest.ItemVersion,
+	}, mappings.ItemVersion)
 	blockRuntimeId := uint32(0)
 	if latestBlockState, ok := item.BlockStateFromItem(i); ok {
 		rid, _ := latest.StateToRuntimeID(latestBlockState)
@@ -44,7 +43,7 @@ func downgradeItem(input protocol.ItemStack) protocol.ItemStack {
 	networkID, ok := mappings.ItemNameToRuntimeID(name)
 	if !ok {
 		networkID, _ = mappings.ItemNameToRuntimeID("minecraft:air")
-		blockRuntimeId = legacyAirRID
+		blockRuntimeId = mappings.AirRID
 	}
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{
@@ -71,29 +70,44 @@ func downgradeItemInstance(input protocol.ItemInstance) protocol.ItemInstance {
 // downgradeChunk downgrades a chunk from the latest version to the legacy equivalent.
 func downgradeChunk(c *chunk.Chunk, oldFormat bool) {
 	start := 0
+	r := cube.Range{-64, 319}
 	if oldFormat {
 		start = 4
+		r = cube.Range{0, 255}
 	}
+	downgraded := chunk.New(mappings.AirRID, r)
 
+	i := 0
 	// First downgrade the blocks.
-	for subInd, sub := range c.Sub()[start : len(c.Sub())-start] {
-		for layerInd, layer := range sub.Layers() {
-			downgradedLayer := c.Sub()[subInd].Layer(uint8(layerInd))
-			for x := uint8(0); x < 16; x++ {
-				for z := uint8(0); z < 16; z++ {
-					for y := uint8(0); y < 16; y++ {
-						latestRuntimeID := layer.At(x, y, z)
-						if latestRuntimeID == latestAirRID {
-							// Don't bother with air.
-							continue
-						}
+	for _, sub := range c.Sub()[start : len(c.Sub())-start] {
+		downgraded.Sub()[i] = downgradeSubChunk(sub)
+		i += 1
+	}
+}
 
-						downgradedLayer.Set(x, y, z, downgradeBlockRuntimeID(latestRuntimeID))
+// downgradeSubChunk downgrades a subchunk from the latest version to the legacy equivalent.
+func downgradeSubChunk(sub *chunk.SubChunk) *chunk.SubChunk {
+	downgraded := chunk.NewSubChunk(mappings.AirRID)
+
+	for layerInd, layer := range sub.Layers() {
+		downgradedLayer := downgraded.Layer(uint8(layerInd))
+		for x := uint8(0); x < 16; x++ {
+			for z := uint8(0); z < 16; z++ {
+				for y := uint8(0); y < 16; y++ {
+					latestRuntimeID := layer.At(x, y, z)
+					if latestRuntimeID == latest.AirRID {
+						// Don't bother with air.
+						continue
 					}
+
+					//downgradedLayer.Set(x, y, z, legacyAirRID)
+					downgradedLayer.Set(x, y, z, downgradeBlockRuntimeID(latestRuntimeID))
 				}
 			}
 		}
 	}
+
+	return downgraded
 }
 
 // downgradeEntityMetadata downgrades entity metadata from latest version to legacy version.

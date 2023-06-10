@@ -91,15 +91,19 @@ func Downgrade(item Item, ver uint16) Item {
 	return item
 }
 
-func BlockStateFromItem(item Item) (blockupgrader.BlockState, bool) {
-	blockId, ok := itemToBlockIdMap[item.Name]
+func BlockStateFromItemName(itemName string, metadata uint32) (blockupgrader.BlockState, bool) {
+	blockId, ok := itemToBlockIdMap[itemName]
 	if !ok {
 		return blockupgrader.BlockState{}, false
 	}
 
 	blockState, ok := blockStateMap[stateHash{
 		Name:     blockId,
-		Metadata: item.Metadata,
+		Metadata: metadata,
 	}]
 	return blockState, ok
+}
+
+func BlockStateFromItem(item Item) (blockupgrader.BlockState, bool) {
+	return BlockStateFromItemName(item.Name, item.Metadata)
 }

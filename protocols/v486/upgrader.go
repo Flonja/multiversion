@@ -7,24 +7,22 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
-const latestItemVersion = 101
-
 // upgradeBlockRuntimeID upgrades legacy block runtime IDs to a latest block runtime ID.
 func upgradeBlockRuntimeID(input uint32) uint32 {
 	state, ok := mappings.RuntimeIDToState(input)
 	if !ok {
-		return latestAirRID
+		return latest.AirRID
 	}
 	runtimeID, ok := latest.StateToRuntimeID(state)
 	if !ok {
-		return latestAirRID
+		return latest.AirRID
 	}
 	return runtimeID
 }
 
 // upgradeItem upgrades the input item stack to a legacy item stack.
 func upgradeItem(input protocol.ItemStack) protocol.ItemStack {
-	if input.NetworkID == int32(legacyAirRID) {
+	if input.NetworkID == int32(mappings.AirRID) {
 		return protocol.ItemStack{}
 	}
 
@@ -32,8 +30,8 @@ func upgradeItem(input protocol.ItemStack) protocol.ItemStack {
 	i := item.Upgrade(item.Item{
 		Name:     name,
 		Metadata: input.MetadataValue,
-		Version:  legacyItemVersion,
-	}, latestItemVersion)
+		Version:  mappings.ItemVersion,
+	}, latest.ItemVersion)
 	blockRuntimeId := uint32(0)
 	if latestBlockState, ok := item.BlockStateFromItem(i); ok {
 		blockRuntimeId, _ = latest.StateToRuntimeID(latestBlockState)
@@ -41,7 +39,7 @@ func upgradeItem(input protocol.ItemStack) protocol.ItemStack {
 	networkID, ok := latest.ItemNameToRuntimeID(name)
 	if !ok {
 		networkID, _ = latest.ItemNameToRuntimeID("minecraft:air")
-		blockRuntimeId = latestAirRID
+		blockRuntimeId = latest.AirRID
 	}
 	return protocol.ItemStack{
 		ItemType: protocol.ItemType{

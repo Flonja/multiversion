@@ -9,6 +9,9 @@ import (
 )
 
 var (
+	// AirRID is the runtime ID of the air block in the latest version of the game.
+	AirRID uint32
+
 	//go:embed block_states.nbt
 	blockStateData []byte
 
@@ -33,9 +36,11 @@ func init() {
 		rid := uint32(len(states))
 		states = append(states, s)
 
-		stateRuntimeIDs[internal.HashState(s)] = rid
+		stateRuntimeIDs[internal.HashState(blockupgrader.Upgrade(s))] = rid
 		runtimeIDToState[rid] = s
 	}
+
+	AirRID, _ = StateToRuntimeID(blockupgrader.BlockState{Name: "minecraft:air"})
 }
 
 // StateToRuntimeID converts a block state to a runtime ID.
