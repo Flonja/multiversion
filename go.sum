@@ -13,6 +13,8 @@ github.com/df-mc/dragonfly v0.9.5-0.20230423110228-77cb3d49debb h1:FFp7Bxmvlw2sH
 github.com/df-mc/dragonfly v0.9.5-0.20230423110228-77cb3d49debb/go.mod h1:prDDLypRsdjJ/e7iQWFxqJu7H7YaVIIHjOjrdxFZLR8=
 github.com/df-mc/dragonfly v0.9.6 h1:psLzbD0YbA0OTWH0uzzi+pFq3kDoLApkGLxnk5HvxaU=
 github.com/df-mc/dragonfly v0.9.6/go.mod h1:ncmopleuGRpu3WZfPqev1chNsFShYYmK2ev6txBK31w=
+github.com/df-mc/dragonfly v0.9.7 h1:+SoS2iXc23HxGsyAAEdntjCCc9asvILY36+b+A3tqXA=
+github.com/df-mc/dragonfly v0.9.7/go.mod h1:pJo/QeYlxACRtM1b+wXqGJ77VsKg7BT3jpHCqR8xS08=
 github.com/df-mc/goleveldb v1.1.9 h1:ihdosZyy5jkQKrxucTQmN90jq/2lUwQnJZjIYIC/9YU=
 github.com/df-mc/goleveldb v1.1.9/go.mod h1:+NHCup03Sci5q84APIA21z3iPZCuk6m6ABtg4nANCSk=
 github.com/df-mc/worldupgrader v1.0.3 h1:3nbthy6vfSNQZdqHBR+E5Fh3mCeWmCwLtqrYDiPUG5I=
