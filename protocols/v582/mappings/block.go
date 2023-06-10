@@ -46,8 +46,6 @@ func init() {
 // StateToRuntimeID converts a block state to a runtime ID.
 func StateToRuntimeID(state blockupgrader.BlockState) (runtimeID uint32, found bool) {
 	rid, ok := stateRuntimeIDs[internal.HashState(blockupgrader.Upgrade(state))]
-	newState, _ := RuntimeIDToState(rid)
-	_ = newState
 	return rid, ok
 }
 
