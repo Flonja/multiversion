@@ -61,7 +61,7 @@ type blockPaletteEncoding struct{}
 func (blockPaletteEncoding) encode(buf *bytes.Buffer, v uint32) {
 	// Get the block state registered with the runtime IDs we have in the palette of the block storage
 	// as we need the name and data value to store.
-	state, _ := latest.RuntimeIDToState(v)
+	state, _ := latest.Block.RuntimeIDToState(v)
 	_ = nbt.NewEncoderWithEncoding(buf, nbt.LittleEndian).Encode(state)
 }
 func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
@@ -69,7 +69,7 @@ func (blockPaletteEncoding) decode(buf *bytes.Buffer) (uint32, error) {
 	if err := nbt.NewDecoderWithEncoding(buf, nbt.LittleEndian).Decode(&e); err != nil {
 		return 0, fmt.Errorf("error decoding block palette entry: %w", err)
 	}
-	v, ok := latest.StateToRuntimeID(e)
+	v, ok := latest.Block.StateToRuntimeID(e)
 	if !ok {
 		return 0, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", e.Name, e.Properties)
 	}
@@ -121,7 +121,7 @@ func (networkPersistentEncoding) encodePalette(buf *bytes.Buffer, p *Palette, _ 
 
 	enc := nbt.NewEncoderWithEncoding(buf, nbt.NetworkLittleEndian)
 	for _, val := range p.values {
-		state, _ := latest.RuntimeIDToState(val)
+		state, _ := latest.Block.RuntimeIDToState(val)
 		_ = enc.Encode(blockupgrader.BlockState{Name: strings.TrimPrefix("minecraft:", state.Name), Properties: state.Properties, Version: state.Version})
 	}
 }
@@ -148,7 +148,7 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 	var ok bool
 	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), uint32(0)
 	for i, b := range blocks {
-		temp, ok = latest.StateToRuntimeID(blockupgrader.BlockState{Name: "minecraft:" + b.Name, Properties: b.Properties, Version: b.Version})
+		temp, ok = latest.Block.StateToRuntimeID(blockupgrader.BlockState{Name: "minecraft:" + b.Name, Properties: b.Properties, Version: b.Version})
 		if !ok {
 			return nil, fmt.Errorf("cannot get runtime ID of block state %v{%+v}", b.Name, b.Properties)
 		}
