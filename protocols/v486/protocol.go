@@ -30,9 +30,10 @@ type Protocol struct {
 func New() *Protocol {
 	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 111)
 	blockMapping := mapping.NewBlockMapping(blockStateData)
+	latestBlockMapping := latest.NewBlockMapping()
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
-		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.Item, blockMapping, latest.Block),
-		blockTranslator: translator.NewBlockTranslator(blockMapping, latest.Block)}
+		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.NewItemMapping(), blockMapping, latestBlockMapping),
+		blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}
 }
 
 func (p Protocol) ID() int32 {

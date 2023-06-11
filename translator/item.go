@@ -61,7 +61,7 @@ func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) proto
 	networkID, ok := t.mapping.ItemNameToRuntimeID(i.Name)
 	if !ok {
 		// TODO: add substitute for unknown items
-		networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:air")
+		networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:update_block")
 	}
 	return protocol.ItemType{
 		NetworkID:     networkID,
@@ -158,7 +158,7 @@ func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protoco
 	}, t.latest.ItemVersion())
 	networkID, ok := t.latest.ItemNameToRuntimeID(i.Name)
 	if !ok {
-		networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:air")
+		networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:update_block")
 	}
 	return protocol.ItemType{
 		NetworkID:     networkID,
@@ -403,21 +403,28 @@ func (t *DefaultItemTranslator) DowngradeItemPackets(pks []packet.Packet, _ *min
 				pk.EventData = (itemType.NetworkID << 16) | int32(itemType.MetadataValue)
 			}
 		case *packet.StartGame:
-			pk.Items = lo.Map(pk.Items, func(item protocol.ItemEntry, _ int) protocol.ItemEntry {
-				if !item.ComponentBased {
+			for i, entry := range pk.Items {
+				if !entry.ComponentBased {
 					itemType := t.DowngradeItemType(protocol.ItemType{
-						NetworkID:     int32(item.RuntimeID),
+						NetworkID:     int32(entry.RuntimeID),
 						MetadataValue: 0,
 					})
-					item.RuntimeID = int16(itemType.NetworkID)
+					if itemType.NetworkID == t.mapping.Air() {
+						removeIndex(pk.Items, i)
+						continue
+					}
+					entry.RuntimeID = int16(itemType.NetworkID)
 
 					var ok bool
-					if item.Name, ok = t.mapping.ItemRuntimeIDToName(itemType.NetworkID); !ok {
+					if entry.Name, ok = t.mapping.ItemRuntimeIDToName(itemType.NetworkID); !ok {
 						panic(itemType)
 					}
+				} else {
+					t.latest.RegisterEntry(entry)
+					entry.RuntimeID = t.mapping.RegisterEntry(entry)
 				}
-				return item
-			})
+				pk.Items[i] = entry
+			}
 		}
 		result = append(result, pk)
 	}
@@ -589,23 +596,32 @@ func (t *DefaultItemTranslator) UpgradeItemPackets(pks []packet.Packet, _ *minec
 				pk.EventData = (itemType.NetworkID << 16) | int32(itemType.MetadataValue)
 			}
 		case *packet.StartGame:
-			pk.Items = lo.Map(pk.Items, func(item protocol.ItemEntry, _ int) protocol.ItemEntry {
-				if !item.ComponentBased {
+			for i, entry := range pk.Items {
+				if !entry.ComponentBased {
 					itemType := t.UpgradeItemType(protocol.ItemType{
-						NetworkID:     int32(item.RuntimeID),
+						NetworkID:     int32(entry.RuntimeID),
 						MetadataValue: 0,
 					})
-					item.RuntimeID = int16(itemType.NetworkID)
+					entry.RuntimeID = int16(itemType.NetworkID)
 
 					var ok bool
-					if item.Name, ok = t.latest.ItemRuntimeIDToName(itemType.NetworkID); !ok {
+					if entry.Name, ok = t.latest.ItemRuntimeIDToName(itemType.NetworkID); !ok {
 						panic(itemType)
 					}
+				} else {
+					t.latest.RegisterEntry(entry)
+					entry.RuntimeID = t.mapping.RegisterEntry(entry)
 				}
-				return item
-			})
+				pk.Items[i] = entry
+			}
 		}
 		result = append(result, pk)
 	}
 	return result
+}
+
+func removeIndex[T any](s []T, index int) []T {
+	ret := make([]T, 0)
+	ret = append(ret, s[:index]...)
+	return append(ret, s[index+1:]...)
 }

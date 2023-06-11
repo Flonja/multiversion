@@ -8,6 +8,8 @@ import (
 var (
 	//go:embed block_states.nbt
 	blockStateData []byte
-
-	Block = mapping.NewBlockMapping(blockStateData)
 )
+
+func NewBlockMapping() *mapping.DefaultBlockMapping {
+	return mapping.NewBlockMapping(blockStateData)
+}

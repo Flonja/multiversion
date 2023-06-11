@@ -7,6 +7,7 @@ import (
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
+	"github.com/flonja/multiversion/packbuilder"
 	_ "github.com/flonja/multiversion/protocols"
 	v486 "github.com/flonja/multiversion/protocols/v486"
 	v582 "github.com/flonja/multiversion/protocols/v582"
@@ -26,16 +27,24 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pv486, pv582 := v486.New(), v582.New()
+
+	resources := conf.Resources
+	if autoGen, ok := packbuilder.BuildResourcePack(world.CustomItems(), pv582.Ver()); ok && !conf.DisableResourceBuilding {
+		resources = append(resources, autoGen)
+	}
+	conf.DisableResourceBuilding = true
+
 	conf.Listeners = []func(conf server.Config) (server.Listener, error){
 		func(conf server.Config) (server.Listener, error) {
 			cfg := minecraft.ListenConfig{
 				MaximumPlayers:         conf.MaxPlayers,
 				StatusProvider:         statusProvider{name: conf.Name},
 				AuthenticationDisabled: conf.AuthDisabled,
-				ResourcePacks:          conf.Resources,
+				ResourcePacks:          resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{v486.New(), v582.New()},
+				AcceptedProtocols:      []minecraft.Protocol{pv486, pv582},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {

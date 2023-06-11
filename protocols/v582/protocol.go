@@ -4,11 +4,11 @@ import (
 	_ "embed"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/latest"
-	"github.com/flonja/multiversion/protocols/v582/items"
 	legacypacket "github.com/flonja/multiversion/protocols/v582/packet"
 	"github.com/flonja/multiversion/translator"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"github.com/sandertv/gophertunnel/minecraft/resource"
 )
 
 var (
@@ -30,9 +30,10 @@ func New() *Protocol {
 	itemMapping.Register(items.DiscRelic{}, "minecraft:music_disc_relic")
 
 	blockMapping := mapping.NewBlockMapping(blockStateData)
+	latestBlockMapping := latest.NewBlockMapping()
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
-		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.Item, blockMapping, latest.Block),
-		blockTranslator: translator.NewBlockTranslator(blockMapping, latest.Block)}
+		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.NewItemMapping(), blockMapping, latestBlockMapping),
+		blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}
 }
 
 func (Protocol) ID() int32 {

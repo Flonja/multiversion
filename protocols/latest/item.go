@@ -10,6 +10,8 @@ const ItemVersion = 121
 var (
 	//go:embed item_runtime_ids.nbt
 	itemRuntimeIDData []byte
-
-	Item = mapping.NewItemMapping(itemRuntimeIDData, ItemVersion)
 )
+
+func NewItemMapping() *mapping.DefaultItemMapping {
+	return mapping.NewItemMapping(itemRuntimeIDData, ItemVersion)
+}
