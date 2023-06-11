@@ -211,7 +211,7 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 			}
 			for i, block := range pk.Extra {
 				block.BlockRuntimeID = t.DowngradeBlockRuntimeID(block.BlockRuntimeID)
-				pk.Blocks[i] = block
+				pk.Extra[i] = block
 			}
 		case *packet.UpdateBlock:
 			pk.NewBlockRuntimeID = t.DowngradeBlockRuntimeID(pk.NewBlockRuntimeID)
