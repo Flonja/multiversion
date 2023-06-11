@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/latest"
+	"github.com/flonja/multiversion/protocols/v582/items"
 	legacypacket "github.com/flonja/multiversion/protocols/v582/packet"
 	"github.com/flonja/multiversion/translator"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -26,6 +27,8 @@ type Protocol struct {
 
 func New() *Protocol {
 	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 111)
+	itemMapping.Register(items.DiscRelic{}, "minecraft:music_disc_relic")
+
 	blockMapping := mapping.NewBlockMapping(blockStateData)
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
 		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.Item, blockMapping, latest.Block),
@@ -54,8 +57,6 @@ func (Protocol) Encryption(key [32]byte) packet.Encryption {
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
 	switch pk := pk.(type) {
-	case *packet.ClientCacheStatus:
-		pk.Enabled = false
 	case *legacypacket.Emote:
 		return []packet.Packet{
 			&packet.Emote{
