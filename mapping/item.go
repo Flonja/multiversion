@@ -1,10 +1,7 @@
 package mapping
 
 import (
-	"fmt"
-	"github.com/df-mc/dragonfly/server/world"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
-	"github.com/sandertv/gophertunnel/minecraft/protocol"
 )
 
 type Item interface {
@@ -12,8 +9,7 @@ type Item interface {
 	ItemRuntimeIDToName(int32) (string, bool)
 	// ItemNameToRuntimeID converts a string ID to an item runtime ID.
 	ItemNameToRuntimeID(string) (int32, bool)
-	// RegisterEntry registers a custom item entry.
-	RegisterEntry(entry protocol.ItemEntry) int16
+	RegisterEntry(name string) int32
 	Air() int32
 	ItemVersion() uint16
 }
@@ -23,10 +19,8 @@ type DefaultItemMapping struct {
 	itemRuntimeIDsToNames map[int32]string
 	// itemNamesToRuntimeIDs holds a map to translate item string IDs to runtime IDs.
 	itemNamesToRuntimeIDs map[string]int32
-	// customItems holds a list of all registered custom items.
-	customItems []world.CustomItem
-	airRID      int32
-	itemVersion uint16
+	airRID                int32
+	itemVersion           uint16
 }
 
 func NewItemMapping(raw []byte, itemVersion uint16) *DefaultItemMapping {
@@ -64,32 +58,11 @@ func (m *DefaultItemMapping) ItemNameToRuntimeID(name string) (runtimeID int32, 
 	return rid, ok
 }
 
-func (m *DefaultItemMapping) RegisterEntry(entry protocol.ItemEntry) int16 {
-	if !entry.ComponentBased {
-		return entry.RuntimeID
-	}
-
-	nextRID := int32(len(m.itemNamesToRuntimeIDs))
-	m.itemNamesToRuntimeIDs[entry.Name] = nextRID
-	m.itemRuntimeIDsToNames[nextRID] = entry.Name
-	return int16(nextRID)
-}
-
-func (m *DefaultItemMapping) Register(item world.CustomItem, replacement string) {
-	name, _ := item.EncodeItem()
-
-	nextRID := int32(len(m.itemNamesToRuntimeIDs))
+func (m *DefaultItemMapping) RegisterEntry(name string) int32 {
+	nextRID := int32(len(m.itemRuntimeIDsToNames))
 	m.itemNamesToRuntimeIDs[name] = nextRID
-	m.itemNamesToRuntimeIDs[replacement] = nextRID
-	m.itemRuntimeIDsToNames[nextRID] = replacement
-	m.customItems = append(m.customItems, item)
-	if _, ok := m.itemNamesToRuntimeIDs[name]; !ok {
-		panic(fmt.Sprintf("item name %v does not have a runtime ID", name))
-	}
-}
-
-func (m *DefaultItemMapping) CustomItems() []world.CustomItem {
-	return m.customItems
+	m.itemRuntimeIDsToNames[nextRID] = name
+	return nextRID
 }
 
 func (m *DefaultItemMapping) Air() int32 {

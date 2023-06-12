@@ -3,7 +3,7 @@ module github.com/flonja/multiversion
 go 1.20
 
 require (
-	github.com/df-mc/dragonfly v0.9.7
+	github.com/df-mc/dragonfly v0.9.8-0.20230611232136-6f7226f45abd
 	github.com/df-mc/worldupgrader v1.0.7
 	github.com/go-gl/mathgl v1.0.0
 	github.com/google/uuid v1.3.0

@@ -1,8 +1,11 @@
 package translator
 
 import (
+	"fmt"
+	"github.com/df-mc/dragonfly/server/world"
 	"github.com/flonja/multiversion/internal/item"
 	"github.com/flonja/multiversion/mapping"
+	"github.com/flonja/multiversion/packbuilder"
 	"github.com/samber/lo"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -32,6 +35,10 @@ type ItemTranslator interface {
 	// UpgradeItemDescriptorCount upgrades the input item descriptor (with count) to the latest item descriptor (with count).
 	UpgradeItemDescriptorCount(input protocol.ItemDescriptorCount) protocol.ItemDescriptorCount
 	UpgradeItemPackets(pks []packet.Packet, conn *minecraft.Conn) []packet.Packet
+	// Register registers a custom item entry.
+	Register(item world.CustomItem, replacement string)
+	// CustomItems lists all custom items used as substitutes, with the runtime id as the key
+	CustomItems() map[int32]world.CustomItem
 }
 
 type DefaultItemTranslator struct {
@@ -39,10 +46,14 @@ type DefaultItemTranslator struct {
 	latest             mapping.Item
 	blockMapping       mapping.Block
 	blockMappingLatest mapping.Block
+	ridToCustomItem    map[int32]world.CustomItem
+	originalToCustom   map[int32]int32
+	customToOriginal   map[int32]int32
 }
 
 func NewItemTranslator(mapping mapping.Item, latestMapping mapping.Item, blockMapping mapping.Block, blockMappingLatest mapping.Block) *DefaultItemTranslator {
-	return &DefaultItemTranslator{mapping: mapping, latest: latestMapping, blockMapping: blockMapping, blockMappingLatest: blockMappingLatest}
+	return &DefaultItemTranslator{mapping: mapping, latest: latestMapping, blockMapping: blockMapping, blockMappingLatest: blockMappingLatest,
+		ridToCustomItem: make(map[int32]world.CustomItem), originalToCustom: make(map[int32]int32), customToOriginal: make(map[int32]int32)}
 }
 
 func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) protocol.ItemType {
@@ -51,21 +62,28 @@ func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) proto
 			NetworkID: t.mapping.Air(),
 		}
 	}
+	networkID := input.NetworkID
+	metadata := input.MetadataValue
 
-	name, _ := t.latest.ItemRuntimeIDToName(input.NetworkID)
-	i := item.Downgrade(item.Item{
-		Name:     name,
-		Metadata: input.MetadataValue,
-		Version:  t.latest.ItemVersion(),
-	}, t.mapping.ItemVersion())
-	networkID, ok := t.mapping.ItemNameToRuntimeID(i.Name)
-	if !ok {
-		// TODO: add substitute for unknown items
-		networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:update_block")
+	var ok bool
+	if networkID, ok = t.originalToCustom[input.NetworkID]; !ok {
+		name, _ := t.latest.ItemRuntimeIDToName(input.NetworkID)
+		i := item.Downgrade(item.Item{
+			Name:     name,
+			Metadata: input.MetadataValue,
+			Version:  t.latest.ItemVersion(),
+		}, t.mapping.ItemVersion())
+		metadata = i.Metadata
+
+		networkID, ok = t.mapping.ItemNameToRuntimeID(i.Name)
+		if !ok {
+			networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:update_block")
+		}
 	}
+
 	return protocol.ItemType{
 		NetworkID:     networkID,
-		MetadataValue: i.Metadata,
+		MetadataValue: metadata,
 	}
 }
 
@@ -149,20 +167,26 @@ func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protoco
 			NetworkID: t.latest.Air(),
 		}
 	}
+	networkID := input.NetworkID
+	metadata := input.MetadataValue
 
-	name, _ := t.mapping.ItemRuntimeIDToName(input.NetworkID)
-	i := item.Upgrade(item.Item{
-		Name:     name,
-		Metadata: input.MetadataValue,
-		Version:  t.mapping.ItemVersion(),
-	}, t.latest.ItemVersion())
-	networkID, ok := t.latest.ItemNameToRuntimeID(i.Name)
-	if !ok {
-		networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:update_block")
+	var ok bool
+	if networkID, ok = t.customToOriginal[input.NetworkID]; !ok {
+		name, _ := t.mapping.ItemRuntimeIDToName(input.NetworkID)
+		i := item.Upgrade(item.Item{
+			Name:     name,
+			Metadata: input.MetadataValue,
+			Version:  t.mapping.ItemVersion(),
+		}, t.latest.ItemVersion())
+		networkID, ok = t.latest.ItemNameToRuntimeID(i.Name)
+		if !ok {
+			networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:update_block")
+		}
 	}
+
 	return protocol.ItemType{
 		NetworkID:     networkID,
-		MetadataValue: i.Metadata,
+		MetadataValue: metadata,
 	}
 }
 
@@ -420,10 +444,26 @@ func (t *DefaultItemTranslator) DowngradeItemPackets(pks []packet.Packet, _ *min
 						panic(itemType)
 					}
 				} else {
-					t.latest.RegisterEntry(entry)
-					entry.RuntimeID = t.mapping.RegisterEntry(entry)
+					t.latest.RegisterEntry(entry.Name)
+					entry.RuntimeID = int16(t.mapping.RegisterEntry(entry.Name))
 				}
 				pk.Items[i] = entry
+			}
+			for rid, i := range t.CustomItems() {
+				name, _ := i.EncodeItem()
+				pk.Items = append(pk.Items, protocol.ItemEntry{
+					Name:           name,
+					RuntimeID:      int16(rid),
+					ComponentBased: true,
+				})
+			}
+		case *packet.ItemComponent:
+			for _, i := range t.CustomItems() {
+				name, _ := i.EncodeItem()
+				pk.Items = append(pk.Items, protocol.ItemComponentEntry{
+					Name: name,
+					Data: packbuilder.Components(i),
+				})
 			}
 		}
 		result = append(result, pk)
@@ -609,15 +649,51 @@ func (t *DefaultItemTranslator) UpgradeItemPackets(pks []packet.Packet, _ *minec
 						panic(itemType)
 					}
 				} else {
-					t.latest.RegisterEntry(entry)
-					entry.RuntimeID = t.mapping.RegisterEntry(entry)
+					t.latest.RegisterEntry(entry.Name)
+					entry.RuntimeID = int16(t.mapping.RegisterEntry(entry.Name))
 				}
 				pk.Items[i] = entry
+			}
+			for rid, i := range t.CustomItems() {
+				name, _ := i.EncodeItem()
+				pk.Items = append(pk.Items, protocol.ItemEntry{
+					Name:           name,
+					RuntimeID:      int16(rid),
+					ComponentBased: true,
+				})
+			}
+		case *packet.ItemComponent:
+			for _, i := range t.CustomItems() {
+				name, _ := i.EncodeItem()
+				pk.Items = append(pk.Items, protocol.ItemComponentEntry{
+					Name: name,
+					Data: packbuilder.Components(i),
+				})
 			}
 		}
 		result = append(result, pk)
 	}
 	return result
+}
+
+func (t *DefaultItemTranslator) Register(item world.CustomItem, replacement string) {
+	name, _ := item.EncodeItem()
+	originalRid, ok := t.latest.ItemNameToRuntimeID(replacement)
+	if !ok {
+		panic(fmt.Errorf("%v not found in latest items", replacement))
+	}
+	if _, ok := t.originalToCustom[originalRid]; ok {
+		panic(fmt.Errorf("%v is already mapped", replacement))
+	}
+
+	nextRID := t.mapping.RegisterEntry(name)
+	t.ridToCustomItem[nextRID] = item
+	t.originalToCustom[originalRid] = nextRID
+	t.customToOriginal[nextRID] = originalRid
+}
+
+func (t *DefaultItemTranslator) CustomItems() map[int32]world.CustomItem {
+	return t.ridToCustomItem
 }
 
 func removeIndex[T any](s []T, index int) []T {
