@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"github.com/flonja/multiversion/protocols/v486/types"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/google/uuid"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -52,7 +51,7 @@ type AddPlayer struct {
 	// The metadata values are indexed by their property key.
 	EntityMetadata map[uint32]any
 	// AdventureSettings represents various data about the abilities of a player, such as ability layers or permissions.
-	AdventureSettings types.AdventureSettings
+	AdventureSettings packet.AdventureSettings
 	// EntityLinks is a list of entity links that are currently active on the player. These links alter the
 	// way the player shows up when first spawned in terms of it shown as riding an entity. Setting these
 	// links is important for new viewers to see the player is riding another entity.
@@ -86,4 +85,5 @@ func (pk *AddPlayer) Marshal(r protocol.IO) {
 	protocol.Single(r, &pk.AdventureSettings)
 	protocol.Slice(r, &pk.EntityLinks)
 	r.String(&pk.DeviceID)
+	r.Int32(&pk.BuildPlatform)
 }

@@ -1,6 +1,7 @@
 package packet
 
 import (
+	"github.com/flonja/multiversion/protocols/v486/types"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -41,7 +42,7 @@ type PlayerAuthInput struct {
 	// ItemInteractionData is the transaction data if the InputData includes an item interaction.
 	ItemInteractionData protocol.UseItemTransactionData
 	// ItemStackRequest is sent by the client to change an item in their inventory.
-	ItemStackRequest protocol.ItemStackRequest
+	ItemStackRequest types.ItemStackRequest
 	// BlockActions is a slice of block actions that the client has interacted with.
 	BlockActions []protocol.PlayerBlockAction
 }

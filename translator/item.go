@@ -77,7 +77,7 @@ func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) proto
 
 		networkID, ok = t.mapping.ItemNameToRuntimeID(i.Name)
 		if !ok {
-			networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:update_block")
+			networkID, _ = t.mapping.ItemNameToRuntimeID("minecraft:info_update")
 		}
 	}
 
@@ -180,7 +180,7 @@ func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protoco
 		}, t.latest.ItemVersion())
 		networkID, ok = t.latest.ItemNameToRuntimeID(i.Name)
 		if !ok {
-			networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:update_block")
+			networkID, _ = t.latest.ItemNameToRuntimeID("minecraft:info_update")
 		}
 	}
 
@@ -281,6 +281,17 @@ func (t *DefaultItemTranslator) DowngradeItemPackets(pks []packet.Packet, _ *min
 			pk.Content = lo.Map(pk.Content, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
 				return t.DowngradeItemInstance(item)
 			})
+		case *packet.ItemStackRequest:
+			for i, request := range pk.Requests {
+				for i2, action := range request.Actions {
+					if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {
+						act.ResultItems = lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
+							return t.DowngradeItemStack(item)
+						})
+						pk.Requests[i].Actions[i2] = act
+					}
+				}
+			}
 		case *packet.CraftingData:
 			for i, recipe := range pk.Recipes {
 				switch recipe := recipe.(type) {
@@ -381,7 +392,7 @@ func (t *DefaultItemTranslator) DowngradeItemPackets(pks []packet.Packet, _ *min
 		case *packet.PlayerAuthInput:
 			for i, action := range pk.ItemStackRequest.Actions {
 				if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {
-					lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
+					act.ResultItems = lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
 						return t.DowngradeItemStack(item)
 					})
 					pk.ItemStackRequest.Actions[i] = act
@@ -491,6 +502,17 @@ func (t *DefaultItemTranslator) UpgradeItemPackets(pks []packet.Packet, _ *minec
 			pk.Content = lo.Map(pk.Content, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
 				return t.UpgradeItemInstance(item)
 			})
+		case *packet.ItemStackRequest:
+			for i, request := range pk.Requests {
+				for i2, action := range request.Actions {
+					if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {
+						act.ResultItems = lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
+							return t.UpgradeItemStack(item)
+						})
+						pk.Requests[i].Actions[i2] = act
+					}
+				}
+			}
 		case *packet.CraftingData:
 			for i, recipe := range pk.Recipes {
 				switch recipe := recipe.(type) {
@@ -591,7 +613,7 @@ func (t *DefaultItemTranslator) UpgradeItemPackets(pks []packet.Packet, _ *minec
 		case *packet.PlayerAuthInput:
 			for i, action := range pk.ItemStackRequest.Actions {
 				if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {
-					lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
+					act.ResultItems = lo.Map(act.ResultItems, func(item protocol.ItemStack, _ int) protocol.ItemStack {
 						return t.UpgradeItemStack(item)
 					})
 					pk.ItemStackRequest.Actions[i] = act
