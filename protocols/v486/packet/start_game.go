@@ -155,7 +155,7 @@ type StartGame struct {
 	EducationSharedResourceURI protocol.EducationSharedResourceURI
 	// ForceExperimentalGameplay specifies if experimental gameplay should be force enabled. For servers this
 	// should always be set to false.
-	ForceExperimentalGameplay protocol.Optional[bool]
+	ForceExperimentalGameplay bool
 	// LevelID is a base64 encoded world ID that is used to identify the world.
 	LevelID string
 	// WorldName is the name of the world that the player is joining. Note that this field shows up above the
@@ -248,7 +248,11 @@ func (pk *StartGame) Marshal(r protocol.IO) {
 	r.Int32(&pk.LimitedWorldDepth)
 	r.Bool(&pk.NewNether)
 	protocol.Single(r, &pk.EducationSharedResourceURI)
-	protocol.OptionalFunc(r, &pk.ForceExperimentalGameplay, r.Bool)
+	r.Bool(&pk.ForceExperimentalGameplay)
+	if pk.ForceExperimentalGameplay {
+		// This might look wrong, but it's correct: Mojank is reading/writing the same boolean twice if it's set to true
+		r.Bool(&pk.ForceExperimentalGameplay)
+	}
 	r.String(&pk.LevelID)
 	r.String(&pk.WorldName)
 	r.String(&pk.TemplateContentIdentity)
