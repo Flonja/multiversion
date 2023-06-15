@@ -3,7 +3,6 @@ package v486
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/latest"
 	legacypacket "github.com/flonja/multiversion/protocols/v486/packet"
@@ -951,7 +950,6 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				for _, layer := range layers {
 					for flag, mapped := range layerMapping {
 						if (layer.Values & flag) != 0 {
-							fmt.Println(flag)
 							out |= mapped
 						}
 					}
