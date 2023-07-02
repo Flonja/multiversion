@@ -95,16 +95,6 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 	case *packet.ClientCacheStatus:
 		pk.Enabled = false
 		newPks = append(newPks, pk)
-	//case *packet.SetLocalPlayerAsInitialised:
-	//	newPks = append(newPks, pk)
-	//	newPks = append(newPks, &packet.MovePlayer{
-	//		EntityRuntimeID: conn.GameData().EntityRuntimeID,
-	//		Position:        conn.GameData().PlayerPosition,
-	//		Pitch:           conn.GameData().Pitch,
-	//		Yaw:             conn.GameData().Yaw,
-	//		HeadYaw:         conn.GameData().Yaw,
-	//		OnGround:        true,
-	//	})
 	case *legacypacket.AddActor:
 		newPks = append(newPks, &packet.AddActor{
 			EntityMetadata:   upgradeEntityMetadata(pk.EntityMetadata),
@@ -537,22 +527,23 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			return out
 		}
 
-		newPks = append(newPks, &packet.UpdateAbilities{
-			AbilityData: protocol.AbilityData{
-				EntityUniqueID:     pk.PlayerUniqueID,
-				PlayerPermissions:  byte(pk.PermissionLevel),
-				CommandPermissions: byte(pk.CommandPermissionLevel),
-				Layers: []protocol.AbilityLayer{
-					{
-						Type:      protocol.AbilityLayerTypeBase,
-						Abilities: protocol.AbilityCount - 1,
-						Values:    handleFlag(pk.Flags, false) | handleFlag(pk.ActionPermissions, true),
-						FlySpeed:  protocol.AbilityBaseFlySpeed,
-						WalkSpeed: protocol.AbilityBaseWalkSpeed,
-					},
-				},
-			},
-		})
+		_ = handleFlag
+		//newPks = append(newPks, &packet.UpdateAbilities{
+		//	AbilityData: protocol.AbilityData{
+		//		EntityUniqueID:     pk.PlayerUniqueID,
+		//		PlayerPermissions:  byte(pk.PermissionLevel),
+		//		CommandPermissions: byte(pk.CommandPermissionLevel),
+		//		Layers: []protocol.AbilityLayer{
+		//			{
+		//				Type:      protocol.AbilityLayerTypeBase,
+		//				Abilities: protocol.AbilityCount - 1,
+		//				Values:    handleFlag(pk.Flags, false) | handleFlag(pk.ActionPermissions, true),
+		//				FlySpeed:  protocol.AbilityBaseFlySpeed,
+		//				WalkSpeed: protocol.AbilityBaseWalkSpeed,
+		//			},
+		//		},
+		//	},
+		//})
 	default:
 		newPks = append(newPks, pk)
 	}
