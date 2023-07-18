@@ -5,11 +5,22 @@ import (
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
 	v582 "github.com/flonja/multiversion/protocols/v582"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/auth"
+	"golang.org/x/oauth2"
 	"sync"
 )
 
 // The following program implements a proxy that forwards players from one local address to a remote address.
 func runProxy(config config) {
+	var src oauth2.TokenSource
+	if config.AuthEnabled {
+		token, err := auth.RequestLiveToken()
+		if err != nil {
+			panic(err)
+		}
+		src = auth.RefreshTokenSource(token)
+	}
+
 	p, err := minecraft.NewForeignStatusProvider(config.Connection.RemoteAddress)
 	if err != nil {
 		panic(err)
@@ -27,16 +38,17 @@ func runProxy(config config) {
 		if err != nil {
 			panic(err)
 		}
-		go handleConn(c.(*minecraft.Conn), listener, config)
+		go handleConn(c.(*minecraft.Conn), listener, config, src)
 	}
 }
 
 // handleConn handles a new incoming minecraft.Conn from the minecraft.Listener passed.
-func handleConn(conn *minecraft.Conn, listener *minecraft.Listener, config config) {
+func handleConn(conn *minecraft.Conn, listener *minecraft.Listener, config config, src oauth2.TokenSource) {
 	serverConn, err := minecraft.Dialer{
 		KeepXBLIdentityData: true,
 		IdentityData:        conn.IdentityData(),
 		ClientData:          conn.ClientData(),
+		TokenSource:         src,
 	}.Dial("raknet", config.Connection.RemoteAddress)
 	if err != nil {
 		panic(err)
@@ -96,4 +108,5 @@ type config struct {
 		LocalAddress  string
 		RemoteAddress string
 	}
+	AuthEnabled bool
 }
