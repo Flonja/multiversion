@@ -64,6 +64,11 @@ func (chunk *Chunk) SetBlock(x uint8, y int16, z uint8, layer uint8, block uint3
 	sub.Layer(layer).Set(x, uint8(y), z, block)
 }
 
+// BiomeSub returns a list of all biome sub chunks present in the chunk.
+func (chunk *Chunk) BiomeSub() []*PalettedStorage {
+	return chunk.biomes
+}
+
 // Biome returns the biome ID at a specific column in the chunk.
 func (chunk *Chunk) Biome(x uint8, y int16, z uint8) uint32 {
 	return chunk.biomes[chunk.subIndex(y)].At(x, uint8(y), z)
