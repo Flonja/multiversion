@@ -7,7 +7,10 @@ import (
 	"github.com/flonja/multiversion/protocols/latest"
 	"github.com/flonja/multiversion/protocols/v582/items"
 	legacypacket "github.com/flonja/multiversion/protocols/v582/packet"
+	legacypacket_v589 "github.com/flonja/multiversion/protocols/v589/packet"
+	"github.com/flonja/multiversion/protocols/v589/types"
 	"github.com/flonja/multiversion/translator"
+	"github.com/samber/lo"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
@@ -28,19 +31,6 @@ type Protocol struct {
 	blockMapping    mapping.Block
 	itemTranslator  translator.ItemTranslator
 	blockTranslator translator.BlockTranslator
-}
-
-func (Protocol) NewReader(r interface {
-	io.Reader
-	io.ByteReader
-}, shieldID int32, enableLimits bool) protocol.IO {
-	return protocol.NewReader(r, shieldID, enableLimits)
-}
-func (Protocol) NewWriter(w interface {
-	io.Writer
-	io.ByteWriter
-}, shieldID int32) protocol.IO {
-	return protocol.NewWriter(w, shieldID)
 }
 
 func New() *Protocol {
@@ -76,6 +66,7 @@ func (Protocol) Packets(_ bool) packet.Pool {
 	for k, v := range packet.NewServerPool() {
 		pool[k] = v
 	}
+	pool[packet.IDAvailableCommands] = func() packet.Packet { return &legacypacket_v589.AvailableCommands{} }
 	pool[packet.IDEmote] = func() packet.Packet { return &legacypacket.Emote{} }
 	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
 	pool[packet.IDUnlockedRecipes] = func() packet.Packet { return &legacypacket.UnlockedRecipes{} }
@@ -86,22 +77,35 @@ func (Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
 }
 
+func (Protocol) NewReader(r interface {
+	io.Reader
+	io.ByteReader
+}, shieldID int32, enableLimits bool) protocol.IO {
+	return protocol.NewReader(r, shieldID, enableLimits)
+}
+
+func (Protocol) NewWriter(w interface {
+	io.Writer
+	io.ByteWriter
+}, shieldID int32) protocol.IO {
+	return protocol.NewWriter(w, shieldID)
+}
+
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
+	var newPks []packet.Packet
 	switch pk := pk.(type) {
 	case *packet.ClientCacheStatus:
 		pk.Enabled = false
+		newPks = append(newPks, pk)
 	case *legacypacket.Emote:
-		return []packet.Packet{
-			&packet.Emote{
-				EntityRuntimeID: pk.EntityRuntimeID,
-				EmoteID:         pk.EmoteID,
-				XUID:            conn.IdentityData().XUID,
-				PlatformID:      conn.ClientData().PlatformOnlineID,
-				Flags:           pk.Flags,
-			},
-		}
+		newPks = append(newPks, &packet.Emote{
+			EntityRuntimeID: pk.EntityRuntimeID,
+			EmoteID:         pk.EmoteID,
+			XUID:            conn.IdentityData().XUID,
+			PlatformID:      conn.ClientData().PlatformOnlineID,
+			Flags:           pk.Flags,
+		})
 	case *legacypacket.StartGame:
-		var pks []packet.Packet
 		// todo: figure out what to do when there are no custom items
 		//if len(lo.Filter(pk.Items, func(item protocol.ItemEntry, _ int) bool {
 		//	return item.ComponentBased
@@ -119,7 +123,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 		//		}(),
 		//	})
 		//}
-		pks = append(pks, &packet.StartGame{
+		newPks = append(newPks, &packet.StartGame{
 			EntityUniqueID:                 pk.EntityUniqueID,
 			EntityRuntimeID:                pk.EntityRuntimeID,
 			PlayerGameMode:                 pk.PlayerGameMode,
@@ -200,34 +204,56 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 		if pk.NewUnlocks {
 			unlockType = packet.UnlockedRecipesTypeNewlyUnlocked
 		}
-		return []packet.Packet{
+
+		newPks = append(newPks,
 			&packet.UnlockedRecipes{
 				UnlockType: packet.UnlockedRecipesTypeRemoveAllUnlocked,
 			},
 			&packet.UnlockedRecipes{
 				UnlockType: uint32(unlockType),
 				Recipes:    pk.Recipes,
-			},
-		}
+			})
+	case *legacypacket_v589.AvailableCommands:
+		newPks = append(newPks, &packet.AvailableCommands{
+			EnumValues: pk.EnumValues,
+			Suffixes:   pk.Suffixes,
+			Enums:      pk.Enums,
+			Commands: lo.Map(pk.Commands, func(item types.Command, _ int) protocol.Command {
+				return protocol.Command{
+					Name:            item.Name,
+					Description:     item.Description,
+					Flags:           item.Flags,
+					PermissionLevel: item.PermissionLevel,
+					AliasesOffset:   item.AliasesOffset,
+					Overloads: lo.Map(item.Overloads, func(item types.CommandOverload, _ int) protocol.CommandOverload {
+						return protocol.CommandOverload{
+							Parameters: item.Parameters,
+							Chaining:   false,
+						}
+					}),
+				}
+			}),
+			DynamicEnums: pk.DynamicEnums,
+			Constraints:  pk.Constraints,
+		})
+	default:
+		newPks = append(newPks, pk)
 	}
-	return p.blockTranslator.UpgradeBlockPackets(p.itemTranslator.UpgradeItemPackets([]packet.Packet{pk}, conn), conn)
+	return p.blockTranslator.UpgradeBlockPackets(p.itemTranslator.UpgradeItemPackets(newPks, conn), conn)
 }
 
 func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (result []packet.Packet) {
 	result = p.blockTranslator.DowngradeBlockPackets(p.itemTranslator.DowngradeItemPackets([]packet.Packet{pk}, conn), conn)
 
-	for _, pk := range result {
+	for i, pk := range result {
 		switch pk := pk.(type) {
 		case *packet.Emote:
-			return []packet.Packet{
-				&legacypacket.Emote{
-					EntityRuntimeID: pk.EntityRuntimeID,
-					EmoteID:         pk.EmoteID,
-					Flags:           pk.Flags,
-				},
+			result[i] = &legacypacket.Emote{
+				EntityRuntimeID: pk.EntityRuntimeID,
+				EmoteID:         pk.EmoteID,
+				Flags:           pk.Flags,
 			}
 		case *packet.StartGame:
-			var pks []packet.Packet
 			// todo: figure out what to do when there are no custom items
 			//if len(lo.Filter(pk.Items, func(item protocol.ItemEntry, _ int) bool {
 			//	return item.ComponentBased
@@ -245,7 +271,7 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 			//	}(),
 			//})
 			//}
-			pks = append(pks, &legacypacket.StartGame{
+			result[i] = &legacypacket.StartGame{
 				EntityUniqueID:                 pk.EntityUniqueID,
 				EntityRuntimeID:                pk.EntityRuntimeID,
 				PlayerGameMode:                 pk.PlayerGameMode,
@@ -319,18 +345,37 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				ChatRestrictionLevel:           pk.ChatRestrictionLevel,
 				DisablePlayerInteractions:      pk.DisablePlayerInteractions,
 				UseBlockNetworkIDHashes:        pk.UseBlockNetworkIDHashes,
-			})
-			return pks
+			}
 		case *packet.UnlockedRecipes:
 			newUnlocks := false
 			if pk.UnlockType == packet.UnlockedRecipesTypeInitiallyUnlocked || pk.UnlockType == packet.UnlockedRecipesTypeNewlyUnlocked {
 				newUnlocks = true
 			}
-			return []packet.Packet{
-				&legacypacket.UnlockedRecipes{
-					NewUnlocks: newUnlocks,
-					Recipes:    pk.Recipes,
-				},
+			result[i] = &legacypacket.UnlockedRecipes{
+				NewUnlocks: newUnlocks,
+				Recipes:    pk.Recipes,
+			}
+		case *packet.AvailableCommands:
+			result[i] = &legacypacket_v589.AvailableCommands{
+				EnumValues: pk.EnumValues,
+				Suffixes:   pk.Suffixes,
+				Enums:      pk.Enums,
+				Commands: lo.Map(pk.Commands, func(item protocol.Command, _ int) types.Command {
+					return types.Command{
+						Name:            item.Name,
+						Description:     item.Description,
+						Flags:           item.Flags,
+						PermissionLevel: item.PermissionLevel,
+						AliasesOffset:   item.AliasesOffset,
+						Overloads: lo.Map(item.Overloads, func(item protocol.CommandOverload, _ int) types.CommandOverload {
+							return types.CommandOverload{
+								Parameters: item.Parameters,
+							}
+						}),
+					}
+				}),
+				DynamicEnums: pk.DynamicEnums,
+				Constraints:  pk.Constraints,
 			}
 		}
 	}

@@ -66,6 +66,7 @@ func (Protocol) NewReader(r interface {
 }, shieldID int32, enableLimits bool) protocol.IO {
 	return protocol.NewReader(r, shieldID, enableLimits)
 }
+
 func (Protocol) NewWriter(w interface {
 	io.Writer
 	io.ByteWriter

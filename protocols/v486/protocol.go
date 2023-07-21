@@ -7,6 +7,9 @@ import (
 	"github.com/flonja/multiversion/protocols/latest"
 	legacypacket "github.com/flonja/multiversion/protocols/v486/packet"
 	"github.com/flonja/multiversion/protocols/v486/types"
+	legacypacket_v582 "github.com/flonja/multiversion/protocols/v582/packet"
+	legacypacket_v589 "github.com/flonja/multiversion/protocols/v589/packet"
+	types_v589 "github.com/flonja/multiversion/protocols/v589/types"
 	"github.com/flonja/multiversion/translator"
 	"github.com/samber/lo"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -56,6 +59,8 @@ func (Protocol) Packets(_ bool) packet.Pool {
 	pool[packet.IDAddActor] = func() packet.Packet { return &legacypacket.AddActor{} }
 	pool[packet.IDAddPlayer] = func() packet.Packet { return &legacypacket.AddPlayer{} }
 	pool[packet.IDAddVolumeEntity] = func() packet.Packet { return &legacypacket.AddVolumeEntity{} }
+	pool[packet.IDAvailableCommands] = func() packet.Packet { return &legacypacket_v589.AvailableCommands{} }
+	pool[packet.IDEmote] = func() packet.Packet { return &legacypacket_v582.Emote{} }
 	pool[packet.IDCommandRequest] = func() packet.Packet { return &legacypacket.CommandRequest{} }
 	pool[packet.IDNetworkChunkPublisherUpdate] = func() packet.Packet { return &legacypacket.NetworkChunkPublisherUpdate{} }
 	pool[packet.IDPlayerAction] = func() packet.Packet { return &legacypacket.PlayerAction{} }
@@ -84,6 +89,7 @@ func (Protocol) NewReader(r interface {
 }, shieldID int32, enableLimits bool) protocol.IO {
 	return NewReader(protocol.NewReader(r, shieldID, enableLimits))
 }
+
 func (Protocol) NewWriter(w interface {
 	io.Writer
 	io.ByteWriter
@@ -150,7 +156,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			Bounds:             [2]protocol.BlockPos{},
 			Dimension:          0,
 		})
-	case *packet.AvailableCommands:
+	case *legacypacket_v589.AvailableCommands:
 		for ind1, command := range pk.Commands {
 			for ind2, overload := range command.Overloads {
 				for ind3, parameter := range overload.Parameters {
@@ -180,7 +186,28 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 				}
 			}
 		}
-		newPks = append(newPks, pk)
+		newPks = append(newPks, &packet.AvailableCommands{
+			EnumValues: pk.EnumValues,
+			Suffixes:   pk.Suffixes,
+			Enums:      pk.Enums,
+			Commands: lo.Map(pk.Commands, func(item types_v589.Command, _ int) protocol.Command {
+				return protocol.Command{
+					Name:            item.Name,
+					Description:     item.Description,
+					Flags:           item.Flags,
+					PermissionLevel: item.PermissionLevel,
+					AliasesOffset:   item.AliasesOffset,
+					Overloads: lo.Map(item.Overloads, func(item types_v589.CommandOverload, _ int) protocol.CommandOverload {
+						return protocol.CommandOverload{
+							Parameters: item.Parameters,
+							Chaining:   false,
+						}
+					}),
+				}
+			}),
+			DynamicEnums: pk.DynamicEnums,
+			Constraints:  pk.Constraints,
+		})
 	case *packet.BlockActorData:
 		pk.NBTData = downgradeBlockActorData(pk.NBTData)
 		newPks = append(newPks, pk)
@@ -546,6 +573,14 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 		//		},
 		//	},
 		//})
+	case *legacypacket_v582.Emote:
+		newPks = append(newPks, &packet.Emote{
+			EntityRuntimeID: pk.EntityRuntimeID,
+			EmoteID:         pk.EmoteID,
+			XUID:            conn.IdentityData().XUID,
+			PlatformID:      conn.ClientData().PlatformOnlineID,
+			Flags:           pk.Flags,
+		})
 	default:
 		newPks = append(newPks, pk)
 	}
@@ -636,7 +671,27 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 					}
 				}
 			}
-			result[i] = pk
+			result[i] = &legacypacket_v589.AvailableCommands{
+				EnumValues: pk.EnumValues,
+				Suffixes:   pk.Suffixes,
+				Enums:      pk.Enums,
+				Commands: lo.Map(pk.Commands, func(item protocol.Command, _ int) types_v589.Command {
+					return types_v589.Command{
+						Name:            item.Name,
+						Description:     item.Description,
+						Flags:           item.Flags,
+						PermissionLevel: item.PermissionLevel,
+						AliasesOffset:   item.AliasesOffset,
+						Overloads: lo.Map(item.Overloads, func(item protocol.CommandOverload, _ int) types_v589.CommandOverload {
+							return types_v589.CommandOverload{
+								Parameters: item.Parameters,
+							}
+						}),
+					}
+				}),
+				DynamicEnums: pk.DynamicEnums,
+				Constraints:  pk.Constraints,
+			}
 		case *packet.BlockActorData:
 			pk.NBTData = downgradeBlockActorData(pk.NBTData)
 			result[i] = pk
@@ -956,6 +1011,12 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				ActionPermissions:      handleFlag(pk.AbilityData.Layers, true),
 				PermissionLevel:        uint32(pk.AbilityData.PlayerPermissions),
 				PlayerUniqueID:         pk.AbilityData.EntityUniqueID,
+			}
+		case *packet.Emote:
+			result[i] = &legacypacket_v582.Emote{
+				EntityRuntimeID: pk.EntityRuntimeID,
+				EmoteID:         pk.EmoteID,
+				Flags:           pk.Flags,
 			}
 		}
 	}
