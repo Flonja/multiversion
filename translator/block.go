@@ -224,7 +224,7 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 							continue
 						}
 						t.DowngradeSubChunk(subChunk)
-						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, ind))
+						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind)))
 					}
 
 					enc := nbt.NewEncoderWithEncoding(writeBuf, nbt.NetworkLittleEndian)
@@ -399,7 +399,7 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 							continue
 						}
 						t.UpgradeSubChunk(subChunk)
-						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, ind))
+						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind)))
 					}
 
 					enc := nbt.NewEncoderWithEncoding(writeBuf, nbt.NetworkLittleEndian)
