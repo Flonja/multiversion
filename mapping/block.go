@@ -12,6 +12,10 @@ type Block interface {
 	StateToRuntimeID(blockupgrader.BlockState) (uint32, bool)
 	// RuntimeIDToState converts a runtime ID to a name and its state properties.
 	RuntimeIDToState(uint32) (blockupgrader.BlockState, bool)
+	// DowngradeBlockActorData downgrades the input sub chunk to a legacy block actor.
+	DowngradeBlockActorData(map[string]any)
+	// UpgradeBlockActorData upgrades the input sub chunk to the latest block actor.
+	UpgradeBlockActorData(map[string]any)
 	Air() uint32
 }
 
@@ -21,7 +25,8 @@ type DefaultBlockMapping struct {
 	// stateRuntimeIDs holds a map for looking up the runtime ID of a block by the stateHash it produces.
 	stateRuntimeIDs map[internal.StateHash]uint32
 	// runtimeIDToState holds a map for looking up the blockState of a block by its runtime ID.
-	runtimeIDToState map[uint32]blockupgrader.BlockState
+	runtimeIDToState     map[uint32]blockupgrader.BlockState
+	upgrader, downgrader func(map[string]any) map[string]any
 
 	// airRID is the runtime ID of the air block in the latest version of the game.
 	airRID uint32
@@ -62,6 +67,12 @@ func NewBlockMapping(raw []byte) *DefaultBlockMapping {
 	}
 }
 
+func (m *DefaultBlockMapping) WithBlockActorRemapper(downgrader, upgrader func(map[string]any) map[string]any) *DefaultBlockMapping {
+	m.downgrader = downgrader
+	m.upgrader = upgrader
+	return m
+}
+
 func (m *DefaultBlockMapping) StateToRuntimeID(state blockupgrader.BlockState) (uint32, bool) {
 	rid, ok := m.stateRuntimeIDs[internal.HashState(blockupgrader.Upgrade(state))]
 	return rid, ok
@@ -70,6 +81,18 @@ func (m *DefaultBlockMapping) StateToRuntimeID(state blockupgrader.BlockState) (
 func (m *DefaultBlockMapping) RuntimeIDToState(runtimeId uint32) (blockupgrader.BlockState, bool) {
 	state, found := m.runtimeIDToState[runtimeId]
 	return state, found
+}
+
+func (m *DefaultBlockMapping) DowngradeBlockActorData(actorData map[string]any) {
+	if m.downgrader != nil {
+		m.downgrader(actorData)
+	}
+}
+
+func (m *DefaultBlockMapping) UpgradeBlockActorData(actorData map[string]any) {
+	if m.upgrader != nil {
+		m.upgrader(actorData)
+	}
 }
 
 func (m *DefaultBlockMapping) Air() uint32 {

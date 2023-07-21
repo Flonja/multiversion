@@ -40,8 +40,6 @@ func NetworkEncode(air uint32, c *Chunk, oldFormat bool) ([]byte, error) {
 	} else {
 		_, _ = buf.Write(EncodeBiomes(c, NetworkEncoding))
 	}
-	// Length of 1 byte for the border block count.
-	buf.WriteByte(0)
 
 	return buf.Bytes(), nil
 }

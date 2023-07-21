@@ -30,6 +30,20 @@ type Protocol struct {
 	blockTranslator translator.BlockTranslator
 }
 
+func (p Protocol) NewReader(r interface {
+	io.Reader
+	io.ByteReader
+}, shieldID int32) protocol.IO {
+	return protocol.NewReader(r, shieldID)
+}
+
+func (p Protocol) NewWriter(w interface {
+	io.Writer
+	io.ByteWriter
+}, shieldID int32) protocol.IO {
+	return protocol.NewWriter(w, shieldID)
+}
+
 func New() *Protocol {
 	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 111)
 	blockMapping := mapping.NewBlockMapping(blockStateData)
@@ -42,7 +56,7 @@ func New() *Protocol {
 		blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}
 }
 
-func (p Protocol) ResourcePack() *resource.Pack {
+func (p Protocol) ResourcePack(ver string) *resource.Pack {
 	resourcePack, ok := packbuilder.BuildResourcePack(maps.Values(p.itemTranslator.CustomItems()), ver)
 	if !ok {
 		panic("couldn't create resource pack")
@@ -54,10 +68,8 @@ func (Protocol) ID() int32 {
 	return 582
 }
 
-const ver = "1.19.83"
-
 func (Protocol) Ver() string {
-	return ver
+	return "1.19.83"
 }
 
 func (Protocol) Packets(listener bool) packet.Pool {
