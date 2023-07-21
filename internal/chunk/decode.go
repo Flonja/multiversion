@@ -48,15 +48,13 @@ func NetworkDecode(air uint32, buf *bytes.Buffer, count int, oldFormat bool, r c
 			if err != nil {
 				return nil, err
 			}
-			// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
-			// inherit whatever palette we decoded last.
-			if i == 0 && b == nil {
-				// This should never happen and there is no way to handle this.
-				return nil, fmt.Errorf("first biome storage pointed to previous one")
-			}
 			if b == nil {
-				// This means this paletted storage had the flag pointing to the previous one. It basically means we should
+				// b == nil means this paletted storage had the flag pointing to the previous one. It basically means we should
 				// inherit whatever palette we decoded last.
+				if i == 0 {
+					// This should never happen and there is no way to handle this.
+					return nil, fmt.Errorf("first biome storage pointed to previous one")
+				}
 				b = last
 			} else {
 				last = b

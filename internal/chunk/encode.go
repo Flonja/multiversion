@@ -16,16 +16,16 @@ var pool = sync.Pool{
 func NetworkEncode(air uint32, c *Chunk, oldFormat bool) ([]byte, error) {
 	buf := pool.Get().(*bytes.Buffer)
 	if oldFormat {
-		for y := uint8(0); y < 4; y++ {
-			_, _ = buf.Write(EncodeSubChunk(NewSubChunk(air), NetworkEncoding, c.r, y))
+		for y := 0; y < 4; y++ {
+			_, _ = buf.Write(EncodeSubChunk(NewSubChunk(air), NetworkEncoding, SubChunkVersion8, c.r, y))
 		}
 	}
 	for i := 0; i < len(c.sub); i++ {
-		index := uint8(i)
+		index := i
 		if oldFormat {
 			index += 4
 		}
-		_, _ = buf.Write(EncodeSubChunk(c.sub[index], NetworkEncoding, c.r, index))
+		_, _ = buf.Write(EncodeSubChunk(c.sub[index], NetworkEncoding, SubChunkVersion8, c.r, index))
 	}
 	if oldFormat {
 		biomes := make([]byte, 256)
@@ -40,21 +40,24 @@ func NetworkEncode(air uint32, c *Chunk, oldFormat bool) ([]byte, error) {
 	} else {
 		_, _ = buf.Write(EncodeBiomes(c, NetworkEncoding))
 	}
+	// Length of 1 byte for the border block count.
+	buf.WriteByte(0)
+
 	return buf.Bytes(), nil
 }
 
 // EncodeSubChunk encodes a sub-chunk from a chunk into bytes. An Encoding may be passed to encode either for network or
 // disk purposed, the most notable difference being that the network encoding generally uses varints and no NBT.
-func EncodeSubChunk(s *SubChunk, e Encoding, r cube.Range, ind uint8) []byte {
+func EncodeSubChunk(s *SubChunk, e Encoding, subChunkVer subChunkVersion, r cube.Range, ind int) []byte {
 	buf := pool.Get().(*bytes.Buffer)
 	defer func() {
 		buf.Reset()
 		pool.Put(buf)
 	}()
 
-	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), ind + uint8(r[0]>>4)})
+	subChunkVer.encodeHeader(buf, s, r, ind)
 	for _, storage := range s.storages {
-		encodePalettedStorage(buf, storage, e, BlockPaletteEncoding)
+		encodePalettedStorage(buf, storage, nil, e, BlockPaletteEncoding)
 	}
 	sub := make([]byte, buf.Len())
 	_, _ = buf.Read(sub)
@@ -70,8 +73,10 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 		pool.Put(buf)
 	}()
 
+	var previous *PalettedStorage
 	for _, b := range c.biomes {
-		encodePalettedStorage(buf, b, e, BiomePaletteEncoding)
+		encodePalettedStorage(buf, b, previous, e, BiomePaletteEncoding)
+		previous = b
 	}
 	biomes := make([]byte, buf.Len())
 	_, _ = buf.Read(biomes)
@@ -80,7 +85,11 @@ func EncodeBiomes(c *Chunk, e Encoding) []byte {
 
 // encodePalettedStorage encodes a PalettedStorage into a bytes.Buffer. The Encoding passed is used to write the Palette
 // of the PalettedStorage.
-func encodePalettedStorage(buf *bytes.Buffer, storage *PalettedStorage, e Encoding, pe paletteEncoding) {
+func encodePalettedStorage(buf *bytes.Buffer, storage, previous *PalettedStorage, e Encoding, pe paletteEncoding) {
+	if storage.Equal(previous) {
+		_, _ = buf.Write([]byte{0x7f<<1 | e.network()})
+		return
+	}
 	b := make([]byte, len(storage.indices)*4+1)
 	b[0] = byte(storage.bitsPerIndex<<1) | e.network()
 

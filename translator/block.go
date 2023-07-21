@@ -106,7 +106,7 @@ func (t *DefaultBlockTranslator) UpgradeChunk(input *chunk.Chunk, oldFormat bool
 		start = 4
 		r = cube.Range{0, 255}
 	}
-	upgraded := chunk.New(t.latest.Air(), r)
+	upgraded := chunk.New(t.mapping.Air(), r)
 
 	i := 0
 	// First upgrade the blocks.
@@ -177,7 +177,7 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 						continue
 					}
 					t.DowngradeSubChunk(subChunk)
-					entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+					entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind))
 					pk.SubChunkEntries[i] = entry
 				}
 			}
@@ -197,7 +197,7 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 				}
 				t.DowngradeSubChunk(subChunk)
 
-				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind))
 				pk.Blobs[i] = blob
 			}
 		case *packet.UpdateSubChunkBlocks:
@@ -296,7 +296,7 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 						continue
 					}
 					t.UpgradeSubChunk(subChunk)
-					entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+					entry.RawPayload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind))
 					pk.SubChunkEntries[i] = entry
 				}
 			}
@@ -316,7 +316,7 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 				}
 				t.UpgradeSubChunk(subChunk)
 
-				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind))
 				pk.Blobs[i] = blob
 			}
 		case *packet.UpdateSubChunkBlocks:
