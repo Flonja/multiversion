@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/flonja/multiversion/protocols/latest"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
@@ -31,6 +32,11 @@ type (
 		encode(buf *bytes.Buffer, v uint32)
 		decode(buf *bytes.Buffer) (uint32, error)
 	}
+	// Encoding is an encoding type used for Chunk encoding. Implementations of this interface are DiskEncoding and
+	// NetworkEncoding, which can be used to encode a Chunk to an intermediate disk or network representation respectively.
+	subChunkVersion interface {
+		encodeHeader(buf *bytes.Buffer, s *SubChunk, r cube.Range, ind int)
+	}
 )
 
 var (
@@ -42,6 +48,9 @@ var (
 	BiomePaletteEncoding biomePaletteEncoding
 	// BlockPaletteEncoding is the paletteEncoding used for encoding a palette of block states encoded as NBT.
 	BlockPaletteEncoding blockPaletteEncoding
+
+	SubChunkVersion8 subChunkVersion8
+	SubChunkVersion9 subChunkVersion9
 
 	latestBlockMapping = latest.NewBlockMapping()
 )
@@ -101,15 +110,14 @@ func (networkEncoding) decodePalette(buf *bytes.Buffer, blockSize paletteSize, _
 		}
 	}
 
-	var err error
-	palette, temp := newPalette(blockSize, make([]uint32, paletteCount)), int32(0)
+	blocks, temp := make([]uint32, paletteCount), int32(0)
 	for i := int32(0); i < paletteCount; i++ {
-		if err = protocol.Varint32(buf, &temp); err != nil {
+		if err := protocol.Varint32(buf, &temp); err != nil {
 			return nil, fmt.Errorf("error decoding palette entry: %w", err)
 		}
-		palette.values[i] = uint32(temp)
+		blocks[i] = uint32(temp)
 	}
-	return palette, nil
+	return &Palette{values: blocks, size: blockSize}, nil
 }
 
 // networkPersistentEncoding implements the Chunk encoding for sending over network with a persistent palette.
@@ -157,4 +165,16 @@ func (networkPersistentEncoding) decodePalette(buf *bytes.Buffer, blockSize pale
 		palette.values[i] = temp
 	}
 	return palette, nil
+}
+
+type subChunkVersion8 struct{}
+
+func (subChunkVersion8) encodeHeader(buf *bytes.Buffer, s *SubChunk, _ cube.Range, _ int) {
+	_, _ = buf.Write([]byte{8, byte(len(s.storages))})
+}
+
+type subChunkVersion9 struct{}
+
+func (subChunkVersion9) encodeHeader(buf *bytes.Buffer, s *SubChunk, r cube.Range, ind int) {
+	_, _ = buf.Write([]byte{SubChunkVersion, byte(len(s.storages)), uint8(ind + (r[0] >> 4))})
 }

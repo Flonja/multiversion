@@ -17,17 +17,17 @@ type BlockTranslator interface {
 	// DowngradeBlockRuntimeID downgrades the input block runtime IDs to a legacy block runtime ID.
 	DowngradeBlockRuntimeID(uint32) uint32
 	// DowngradeChunk downgrades the input chunk to a legacy chunk.
-	DowngradeChunk(*chunk.Chunk, bool)
+	DowngradeChunk(*chunk.Chunk, bool) *chunk.Chunk
 	// DowngradeSubChunk downgrades the input sub chunk to a legacy sub chunk.
-	DowngradeSubChunk(*chunk.SubChunk) *chunk.SubChunk
+	DowngradeSubChunk(*chunk.SubChunk)
 	// DowngradeBlockPackets downgrades the input block packets to legacy block packets.
 	DowngradeBlockPackets([]packet.Packet, *minecraft.Conn) (result []packet.Packet)
 	// UpgradeBlockRuntimeID upgrades the input block runtime IDs to the latest block runtime ID.
 	UpgradeBlockRuntimeID(uint32) uint32
 	// UpgradeChunk upgrades the input chunk to the latest chunk.
-	UpgradeChunk(*chunk.Chunk, bool)
+	UpgradeChunk(*chunk.Chunk, bool) *chunk.Chunk
 	// UpgradeSubChunk upgrades the input sub chunk to the latest sub chunk.
-	UpgradeSubChunk(*chunk.SubChunk) *chunk.SubChunk
+	UpgradeSubChunk(*chunk.SubChunk)
 	// UpgradeBlockPackets upgrades the input block packets to the latest block packets.
 	UpgradeBlockPackets([]packet.Packet, *minecraft.Conn) (result []packet.Packet)
 }
@@ -53,29 +53,39 @@ func (t *DefaultBlockTranslator) DowngradeBlockRuntimeID(input uint32) uint32 {
 	return runtimeID
 }
 
-func (t *DefaultBlockTranslator) DowngradeChunk(input *chunk.Chunk, oldFormat bool) {
+func (t *DefaultBlockTranslator) DowngradeChunk(input *chunk.Chunk, oldFormat bool) *chunk.Chunk {
 	start := 0
 	r := world.Overworld.Range()
 	if oldFormat {
 		start = 4
 		r = cube.Range{0, 255}
 	}
-	downgraded := chunk.New(t.mapping.Air(), r)
+	downgraded := chunk.New(t.latest.Air(), r)
 
 	i := 0
 	// First downgrade the blocks.
 	for _, sub := range input.Sub()[start : len(input.Sub())-start] {
-		downgraded.Sub()[i] = t.DowngradeSubChunk(sub)
+		t.DowngradeSubChunk(sub)
+		downgraded.Sub()[i] = sub
 		i += 1
 	}
+	i = 0
+	// Then downgrade the biome ids.
+	for _, sub := range input.BiomeSub()[start : len(input.BiomeSub())-start] {
+		// todo
+		sub.Palette().Replace(func(v uint32) uint32 {
+			return 0 // at least the client doesn't crash now
+		})
+		downgraded.BiomeSub()[i] = sub
+		i += 1
+	}
+	return downgraded
 }
 
-func (t *DefaultBlockTranslator) DowngradeSubChunk(sub *chunk.SubChunk) *chunk.SubChunk {
-	for _, layer := range sub.Layers() {
-		layer.Palette().Replace(t.DowngradeBlockRuntimeID)
+func (t *DefaultBlockTranslator) DowngradeSubChunk(input *chunk.SubChunk) {
+	for _, storage := range input.Layers() {
+		storage.Palette().Replace(t.DowngradeBlockRuntimeID)
 	}
-
-	return sub
 }
 
 func (t *DefaultBlockTranslator) downgradeEntityMetadata(metadata map[uint32]any) map[uint32]any {
@@ -97,29 +107,36 @@ func (t *DefaultBlockTranslator) UpgradeBlockRuntimeID(input uint32) uint32 {
 	return runtimeID
 }
 
-func (t *DefaultBlockTranslator) UpgradeChunk(c *chunk.Chunk, oldFormat bool) {
+func (t *DefaultBlockTranslator) UpgradeChunk(input *chunk.Chunk, oldFormat bool) *chunk.Chunk {
 	start := 0
 	r := world.Overworld.Range()
 	if oldFormat {
 		start = 4
 		r = cube.Range{0, 255}
 	}
-	upgraded := chunk.New(t.latest.Air(), r)
+	upgraded := chunk.New(t.mapping.Air(), r)
 
 	i := 0
 	// First upgrade the blocks.
-	for _, sub := range c.Sub()[start : len(c.Sub())-start] {
-		upgraded.Sub()[i] = t.UpgradeSubChunk(sub)
+	for _, sub := range input.Sub()[start : len(input.Sub())-start] {
+		t.UpgradeSubChunk(sub)
+		upgraded.Sub()[i] = sub
 		i += 1
 	}
+	i = 0
+	// Then upgrade the biome ids.
+	for _, sub := range input.BiomeSub()[start : len(input.BiomeSub())-start] {
+		// todo
+		upgraded.BiomeSub()[i] = sub
+		i += 1
+	}
+	return upgraded
 }
 
-func (t *DefaultBlockTranslator) UpgradeSubChunk(sub *chunk.SubChunk) *chunk.SubChunk {
-	for _, layer := range sub.Layers() {
-		layer.Palette().Replace(t.UpgradeBlockRuntimeID)
+func (t *DefaultBlockTranslator) UpgradeSubChunk(input *chunk.SubChunk) {
+	for _, storage := range input.Layers() {
+		storage.Palette().Replace(t.UpgradeBlockRuntimeID)
 	}
-
-	return sub
 }
 
 func (t *DefaultBlockTranslator) upgradeEntityMetadata(metadata map[uint32]any) map[uint32]any {
@@ -206,8 +223,8 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 							//fmt.Println(err)
 							continue
 						}
-						subChunk = t.DowngradeSubChunk(subChunk)
-						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind))
+						t.DowngradeSubChunk(subChunk)
+						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, ind))
 					}
 
 					enc := nbt.NewEncoderWithEncoding(writeBuf, nbt.NetworkLittleEndian)
@@ -242,9 +259,9 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 					// Has a possibility to be a biome, ignore then
 					continue
 				}
-				subChunk = t.DowngradeSubChunk(subChunk)
+				t.DowngradeSubChunk(subChunk)
 
-				blob.Payload = append(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind), buf.Bytes()...)
+				blob.Payload = append(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind)), buf.Bytes()...)
 				pk.Blobs[i] = blob
 			}
 		case *packet.UpdateSubChunkBlocks:
@@ -381,8 +398,8 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 							// Has a possibility to be a biome, ignore then
 							continue
 						}
-						subChunk = t.UpgradeSubChunk(subChunk)
-						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind))
+						t.UpgradeSubChunk(subChunk)
+						writeBuf.Write(chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, ind))
 					}
 
 					enc := nbt.NewEncoderWithEncoding(writeBuf, nbt.NetworkLittleEndian)
@@ -417,9 +434,9 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 					fmt.Println(err)
 					continue
 				}
-				subChunk = t.UpgradeSubChunk(subChunk)
+				t.UpgradeSubChunk(subChunk)
 
-				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, r, ind)
+				blob.Payload = chunk.EncodeSubChunk(subChunk, chunk.NetworkEncoding, chunk.SubChunkVersion9, r, int(ind))
 				pk.Blobs[i] = blob
 			}
 		case *packet.UpdateSubChunkBlocks:
