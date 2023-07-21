@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
+	v486 "github.com/flonja/multiversion/protocols/v486"
 	v582 "github.com/flonja/multiversion/protocols/v582"
 	v589 "github.com/flonja/multiversion/protocols/v589"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -28,7 +29,7 @@ func runProxy(config config) {
 	}
 	listener, err := minecraft.ListenConfig{
 		StatusProvider:         p,
-		AcceptedProtocols:      []minecraft.Protocol{v582.New(), v589.New()},
+		AcceptedProtocols:      []minecraft.Protocol{v486.New(), v582.New(), v589.New()},
 		AuthenticationDisabled: !config.AuthEnabled,
 	}.Listen("raknet", config.Connection.LocalAddress)
 	if err != nil {

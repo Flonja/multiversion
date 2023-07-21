@@ -12,6 +12,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	"github.com/flonja/multiversion/packbuilder"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
+	v486 "github.com/flonja/multiversion/protocols/v486"
 	v582 "github.com/flonja/multiversion/protocols/v582"
 	v589 "github.com/flonja/multiversion/protocols/v589"
 	"github.com/sandertv/gophertunnel/minecraft"
@@ -34,10 +35,10 @@ func runServer() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	pv582 := v582.New()
+	pv486 := v486.New()
 
 	resources := conf.Resources
-	if autoGen, ok := packbuilder.BuildResourcePack(world.CustomItems(), pv582.Ver()); ok && !conf.DisableResourceBuilding {
+	if autoGen, ok := packbuilder.BuildResourcePack(world.CustomItems(), pv486.Ver()); ok && !conf.DisableResourceBuilding {
 		resources = append(resources, autoGen)
 	}
 	conf.DisableResourceBuilding = true
@@ -51,7 +52,7 @@ func runServer() {
 				ResourcePacks:          resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{pv582, v589.New()},
+				AcceptedProtocols:      []minecraft.Protocol{pv486, v582.New(), v589.New()},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {
