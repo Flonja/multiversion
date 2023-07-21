@@ -48,31 +48,29 @@ func (p Protocol) Ver() string {
 	return "1.18.12"
 }
 
-func (Protocol) Packets(listener bool) packet.Pool {
-	if listener {
-		pool := packet.NewClientPool()
-		pool[packet.IDPlayerAuthInput] = func() packet.Packet { return &legacypacket.PlayerAuthInput{} }
-		pool[packet.IDCommandRequest] = func() packet.Packet { return &legacypacket.CommandRequest{} }
-		pool[packet.IDItemStackRequest] = func() packet.Packet { return &legacypacket.ItemStackRequest{} }
-		pool[packet.IDModalFormResponse] = func() packet.Packet { return &legacypacket.ModalFormResponse{} }
-		pool[packet.IDPlayerAction] = func() packet.Packet { return &legacypacket.PlayerAction{} }
-		pool[packet.IDPlayerSkin] = func() packet.Packet { return &legacypacket.PlayerSkin{} }
-		pool[packet.IDRequestChunkRadius] = func() packet.Packet { return &legacypacket.RequestChunkRadius{} }
-		return pool
+func (Protocol) Packets(_ bool) packet.Pool {
+	pool := packet.NewClientPool()
+	for k, v := range packet.NewServerPool() {
+		pool[k] = v
 	}
-	pool := packet.NewServerPool()
 	pool[packet.IDAddActor] = func() packet.Packet { return &legacypacket.AddActor{} }
 	pool[packet.IDAddPlayer] = func() packet.Packet { return &legacypacket.AddPlayer{} }
 	pool[packet.IDAddVolumeEntity] = func() packet.Packet { return &legacypacket.AddVolumeEntity{} }
+	pool[packet.IDCommandRequest] = func() packet.Packet { return &legacypacket.CommandRequest{} }
 	pool[packet.IDNetworkChunkPublisherUpdate] = func() packet.Packet { return &legacypacket.NetworkChunkPublisherUpdate{} }
+	pool[packet.IDPlayerAction] = func() packet.Packet { return &legacypacket.PlayerAction{} }
+	pool[packet.IDPlayerAuthInput] = func() packet.Packet { return &legacypacket.PlayerAuthInput{} }
 	pool[packet.IDPlayerList] = func() packet.Packet { return &legacypacket.PlayerList{} }
 	pool[packet.IDPlayerSkin] = func() packet.Packet { return &legacypacket.PlayerSkin{} }
 	pool[packet.IDRemoveVolumeEntity] = func() packet.Packet { return &legacypacket.RemoveVolumeEntity{} }
+	pool[packet.IDRequestChunkRadius] = func() packet.Packet { return &legacypacket.RequestChunkRadius{} }
 	pool[packet.IDSpawnParticleEffect] = func() packet.Packet { return &legacypacket.SpawnParticleEffect{} }
 	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
 	pool[packet.IDStructureBlockUpdate] = func() packet.Packet { return &legacypacket.StructureBlockUpdate{} }
 	pool[packet.IDStructureTemplateDataRequest] = func() packet.Packet { return &legacypacket.StructureTemplateDataRequest{} }
 	pool[packet.IDUpdateAttributes] = func() packet.Packet { return &legacypacket.UpdateAttributes{} }
+	pool[packet.IDItemStackRequest] = func() packet.Packet { return &legacypacket.ItemStackRequest{} }
+	pool[packet.IDModalFormResponse] = func() packet.Packet { return &legacypacket.ModalFormResponse{} }
 	return pool
 }
 

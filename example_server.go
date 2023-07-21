@@ -13,6 +13,7 @@ import (
 	"github.com/flonja/multiversion/packbuilder"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
 	v582 "github.com/flonja/multiversion/protocols/v582"
+	v589 "github.com/flonja/multiversion/protocols/v589"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 )
@@ -50,7 +51,7 @@ func runServer() {
 				ResourcePacks:          resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{pv582},
+				AcceptedProtocols:      []minecraft.Protocol{pv582, v589.New()},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {

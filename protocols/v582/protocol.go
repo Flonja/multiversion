@@ -30,14 +30,13 @@ type Protocol struct {
 	blockTranslator translator.BlockTranslator
 }
 
-func (p Protocol) NewReader(r interface {
+func (Protocol) NewReader(r interface {
 	io.Reader
 	io.ByteReader
-}, shieldID int32) protocol.IO {
-	return protocol.NewReader(r, shieldID)
+}, shieldID int32, enableLimits bool) protocol.IO {
+	return protocol.NewReader(r, shieldID, enableLimits)
 }
-
-func (p Protocol) NewWriter(w interface {
+func (Protocol) NewWriter(w interface {
 	io.Writer
 	io.ByteWriter
 }, shieldID int32) protocol.IO {
@@ -72,13 +71,11 @@ func (Protocol) Ver() string {
 	return "1.19.83"
 }
 
-func (Protocol) Packets(listener bool) packet.Pool {
-	if listener {
-		pool := packet.NewClientPool()
-		pool[packet.IDEmote] = func() packet.Packet { return &legacypacket.Emote{} }
-		return pool
+func (Protocol) Packets(_ bool) packet.Pool {
+	pool := packet.NewClientPool()
+	for k, v := range packet.NewServerPool() {
+		pool[k] = v
 	}
-	pool := packet.NewServerPool()
 	pool[packet.IDEmote] = func() packet.Packet { return &legacypacket.Emote{} }
 	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
 	pool[packet.IDUnlockedRecipes] = func() packet.Packet { return &legacypacket.UnlockedRecipes{} }
@@ -87,19 +84,6 @@ func (Protocol) Packets(listener bool) packet.Pool {
 
 func (Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
-}
-
-func (Protocol) NewReader(r interface {
-	io.Reader
-	io.ByteReader
-}, shieldID int32, enableLimits bool) protocol.IO {
-	return protocol.NewReader(r, shieldID, enableLimits)
-}
-func (Protocol) NewWriter(w interface {
-	io.Writer
-	io.ByteWriter
-}, shieldID int32) protocol.IO {
-	return protocol.NewWriter(w, shieldID)
 }
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
