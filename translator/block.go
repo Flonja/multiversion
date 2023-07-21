@@ -176,6 +176,7 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 					break
 				}
 				writeBuf.Write(payload)
+				pk.SubChunkCount = uint32(len(c.Sub()))
 			}
 			safeBytes := buf.Bytes()
 
@@ -351,6 +352,7 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 					break
 				}
 				writeBuf.Write(payload)
+				pk.SubChunkCount = uint32(len(c.Sub()))
 			}
 			safeBytes := buf.Bytes()
 
