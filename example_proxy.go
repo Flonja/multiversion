@@ -26,8 +26,9 @@ func runProxy(config config) {
 		panic(err)
 	}
 	listener, err := minecraft.ListenConfig{
-		StatusProvider:    p,
-		AcceptedProtocols: []minecraft.Protocol{v582.New()},
+		StatusProvider:         p,
+		AcceptedProtocols:      []minecraft.Protocol{v582.New()},
+		AuthenticationDisabled: !config.AuthEnabled,
 	}.Listen("raknet", config.Connection.LocalAddress)
 	if err != nil {
 		panic(err)
