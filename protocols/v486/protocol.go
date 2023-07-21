@@ -11,6 +11,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"io"
 )
 
 var (
@@ -44,12 +45,16 @@ func (p Protocol) Ver() string {
 	return "1.18.12"
 }
 
-func (p Protocol) Packets() packet.Pool {
-	pool := packet.NewPool()
+func (Protocol) Packets(listener bool) packet.Pool {
+	if listener {
+		pool := packet.NewClientPool()
+		pool[packet.IDPlayerAuthInput] = func() packet.Packet { return &legacypacket.PlayerAuthInput{} }
+		return pool
+	}
+	pool := packet.NewServerPool()
 	pool[packet.IDAddPlayer] = func() packet.Packet { return &legacypacket.AddPlayer{} }
 	pool[packet.IDAddVolumeEntity] = func() packet.Packet { return &legacypacket.AddVolumeEntity{} }
 	pool[packet.IDNetworkChunkPublisherUpdate] = func() packet.Packet { return &legacypacket.NetworkChunkPublisherUpdate{} }
-	pool[packet.IDPlayerAuthInput] = func() packet.Packet { return &legacypacket.PlayerAuthInput{} }
 	pool[packet.IDRemoveVolumeEntity] = func() packet.Packet { return &legacypacket.RemoveVolumeEntity{} }
 	pool[packet.IDSpawnParticleEffect] = func() packet.Packet { return &legacypacket.SpawnParticleEffect{} }
 	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
@@ -57,8 +62,21 @@ func (p Protocol) Packets() packet.Pool {
 	return pool
 }
 
-func (p Protocol) Encryption(key [32]byte) packet.Encryption {
+func (Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
+}
+
+func (Protocol) NewReader(r interface {
+	io.Reader
+	io.ByteReader
+}, shieldID int32, enableLimits bool) protocol.IO {
+	return protocol.NewReader(r, shieldID, enableLimits)
+}
+func (Protocol) NewWriter(w interface {
+	io.Writer
+	io.ByteWriter
+}, shieldID int32) protocol.IO {
+	return protocol.NewWriter(w, shieldID)
 }
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {

@@ -81,7 +81,7 @@ func init() {
 	}
 
 	blockStateMap = make(map[stateHash]blockupgrader.BlockState)
-	buf := protocol.NewReader(bytes.NewBuffer(rawblockStateMap), 0)
+	buf := protocol.NewReader(bytes.NewBuffer(rawblockStateMap), 0, false)
 	var length uint32
 	buf.Varuint32(&length)
 	for i := uint32(0); i < length; i++ {

@@ -9,9 +9,11 @@ import (
 	legacypacket "github.com/flonja/multiversion/protocols/v582/packet"
 	"github.com/flonja/multiversion/translator"
 	"github.com/sandertv/gophertunnel/minecraft"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
 	"github.com/sandertv/gophertunnel/minecraft/resource"
 	"golang.org/x/exp/maps"
+	"io"
 )
 
 var (
@@ -58,8 +60,13 @@ func (Protocol) Ver() string {
 	return ver
 }
 
-func (Protocol) Packets() packet.Pool {
-	pool := packet.NewPool()
+func (Protocol) Packets(listener bool) packet.Pool {
+	if listener {
+		pool := packet.NewClientPool()
+		pool[packet.IDEmote] = func() packet.Packet { return &legacypacket.Emote{} }
+		return pool
+	}
+	pool := packet.NewServerPool()
 	pool[packet.IDEmote] = func() packet.Packet { return &legacypacket.Emote{} }
 	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
 	pool[packet.IDUnlockedRecipes] = func() packet.Packet { return &legacypacket.UnlockedRecipes{} }
@@ -68,6 +75,19 @@ func (Protocol) Packets() packet.Pool {
 
 func (Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
+}
+
+func (Protocol) NewReader(r interface {
+	io.Reader
+	io.ByteReader
+}, shieldID int32, enableLimits bool) protocol.IO {
+	return protocol.NewReader(r, shieldID, enableLimits)
+}
+func (Protocol) NewWriter(w interface {
+	io.Writer
+	io.ByteWriter
+}, shieldID int32) protocol.IO {
+	return protocol.NewWriter(w, shieldID)
 }
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
