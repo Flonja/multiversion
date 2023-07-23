@@ -11,6 +11,7 @@ require (
 	github.com/samber/lo v1.38.1
 	github.com/sandertv/go-raknet v1.12.0
 	github.com/sandertv/gophertunnel v1.31.0
+	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/image v0.7.0
@@ -38,4 +39,4 @@ require (
 
 replace github.com/sandertv/go-raknet => github.com/tedacmc/tedac-raknet v0.0.4
 
-replace github.com/sandertv/gophertunnel => github.com/everblademc/tedac-gophertunnel v0.0.8
+replace github.com/sandertv/gophertunnel => github.com/everblademc/tedac-gophertunnel v0.0.9

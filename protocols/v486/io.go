@@ -19,6 +19,10 @@ func (r *Reader) Reads() bool {
 	return true
 }
 
+func (r *Reader) LimitsEnabled() bool {
+	return r.Reader.LimitsEnabled()
+}
+
 func (r *Reader) StackRequestAction(x *protocol.StackRequestAction) {
 	var id uint8
 	r.Uint8(&id)
