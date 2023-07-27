@@ -2,7 +2,6 @@ package v486
 
 import (
 	_ "embed"
-	"fmt"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/latest"
 	legacypacket "github.com/flonja/multiversion/protocols/v589/packet"
@@ -51,7 +50,6 @@ func (Protocol) Packets(_ bool) packet.Pool {
 	for k, v := range packet.NewServerPool() {
 		pool[k] = v
 	}
-	fmt.Println(pool[123] == nil)
 	pool[packet.IDAvailableCommands] = func() packet.Packet { return &legacypacket.AvailableCommands{} }
 	return pool
 }

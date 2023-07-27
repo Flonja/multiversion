@@ -2,7 +2,6 @@ package translator
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/df-mc/dragonfly/server/block/cube"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/flonja/multiversion/internal/chunk"
@@ -436,7 +435,7 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 				ind := byte(0)
 				subChunk, err := chunk.DecodeSubChunk(t.mapping.Air(), r, buf, &ind, chunk.NetworkEncoding)
 				if err != nil {
-					fmt.Println(err)
+					//fmt.Println(err)
 					continue
 				}
 				t.UpgradeSubChunk(subChunk)
