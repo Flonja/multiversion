@@ -5,6 +5,9 @@ import (
 	"github.com/df-mc/worldupgrader/blockupgrader"
 	"github.com/flonja/multiversion/internal"
 	"github.com/sandertv/gophertunnel/minecraft/nbt"
+	"github.com/sandertv/gophertunnel/minecraft/protocol"
+	"github.com/segmentio/fasthash/fnv1"
+	"sort"
 )
 
 type Block interface {
@@ -16,6 +19,8 @@ type Block interface {
 	DowngradeBlockActorData(map[string]any)
 	// UpgradeBlockActorData upgrades the input sub chunk to the latest block actor.
 	UpgradeBlockActorData(map[string]any)
+	// Adjust adjusts the latest mappings to account for custom states.
+	Adjust([]protocol.BlockEntry)
 	Air() uint32
 }
 
@@ -92,6 +97,35 @@ func (m *DefaultBlockMapping) DowngradeBlockActorData(actorData map[string]any) 
 func (m *DefaultBlockMapping) UpgradeBlockActorData(actorData map[string]any) {
 	if m.upgrader != nil {
 		m.upgrader(actorData)
+	}
+}
+
+func (m *DefaultBlockMapping) Adjust(entries []protocol.BlockEntry) {
+	customStates := convert(entries)
+	var newStates []blockupgrader.BlockState
+	for _, state := range customStates {
+		if _, ok := m.StateToRuntimeID(state); !ok {
+			newStates = append(newStates, state)
+		}
+	}
+	if len(newStates) == 0 {
+		return
+	}
+
+	adjustedStates := append(m.states, customStates...)
+	sort.SliceStable(adjustedStates, func(i, j int) bool {
+		stateOne, stateTwo := adjustedStates[i], adjustedStates[j]
+		if stateOne.Name == stateTwo.Name {
+			return false
+		}
+		return fnv1.HashString64(stateOne.Name) < fnv1.HashString64(stateTwo.Name)
+	})
+
+	m.stateRuntimeIDs = make(map[internal.StateHash]uint32, len(adjustedStates))
+	m.runtimeIDToState = make(map[uint32]blockupgrader.BlockState, len(adjustedStates))
+	for rid, state := range adjustedStates {
+		m.stateRuntimeIDs[internal.HashState(blockupgrader.Upgrade(state))] = uint32(rid)
+		m.runtimeIDToState[uint32(rid)] = state
 	}
 }
 

@@ -316,6 +316,9 @@ func (t *DefaultBlockTranslator) DowngradeBlockPackets(pks []packet.Packet, conn
 			pk.EntityMetadata = t.downgradeEntityMetadata(pk.EntityMetadata)
 		case *packet.SetActorData:
 			pk.EntityMetadata = t.downgradeEntityMetadata(pk.EntityMetadata)
+		case *packet.StartGame:
+			t.latest.Adjust(pk.Blocks)
+			t.mapping.Adjust(pk.Blocks)
 		}
 		result = append(result, pk)
 	}
@@ -492,6 +495,9 @@ func (t *DefaultBlockTranslator) UpgradeBlockPackets(pks []packet.Packet, conn *
 			pk.EntityMetadata = t.upgradeEntityMetadata(pk.EntityMetadata)
 		case *packet.SetActorData:
 			pk.EntityMetadata = t.upgradeEntityMetadata(pk.EntityMetadata)
+		case *packet.StartGame:
+			t.mapping.Adjust(pk.Blocks)
+			t.latest.Adjust(pk.Blocks)
 		}
 		result = append(result, pk)
 	}
