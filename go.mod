@@ -39,4 +39,4 @@ require (
 
 replace github.com/sandertv/go-raknet => github.com/tedacmc/tedac-raknet v0.0.4
 
-replace github.com/sandertv/gophertunnel => github.com/everblademc/tedac-gophertunnel v0.0.9
+replace github.com/sandertv/gophertunnel => github.com/everblademc/tedac-gophertunnel v0.0.11
