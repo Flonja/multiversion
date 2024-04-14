@@ -4,17 +4,13 @@ import (
 	"fmt"
 	"github.com/df-mc/dragonfly/server"
 	"github.com/df-mc/dragonfly/server/item"
-	"github.com/df-mc/dragonfly/server/item/creative"
 	"github.com/df-mc/dragonfly/server/player"
 	"github.com/df-mc/dragonfly/server/player/chat"
 	"github.com/df-mc/dragonfly/server/session"
 	"github.com/df-mc/dragonfly/server/world"
 	"github.com/df-mc/dragonfly/server/world/sound"
-	"github.com/flonja/multiversion/packbuilder"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
-	v486 "github.com/flonja/multiversion/protocols/v486"
-	v582 "github.com/flonja/multiversion/protocols/v582"
-	v589 "github.com/flonja/multiversion/protocols/v589"
+	v649 "github.com/flonja/multiversion/protocols/v649"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 )
@@ -26,22 +22,11 @@ func runServer() {
 
 	chat.Global.Subscribe(chat.StdoutSubscriber{})
 
-	i := testItem{}
-	world.RegisterItem(i)
-	creative.RegisterItem(item.NewStack(i, 1))
-
 	uc := server.DefaultConfig()
 	conf, err := uc.Config(log)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	pv486 := v486.New()
-
-	resources := conf.Resources
-	if autoGen, ok := packbuilder.BuildResourcePack(world.CustomItems(), pv486.Ver()); ok && !conf.DisableResourceBuilding {
-		resources = append(resources, autoGen)
-	}
-	conf.DisableResourceBuilding = true
 
 	conf.Listeners = []func(conf server.Config) (server.Listener, error){
 		func(conf server.Config) (server.Listener, error) {
@@ -49,10 +34,10 @@ func runServer() {
 				MaximumPlayers:         conf.MaxPlayers,
 				StatusProvider:         statusProvider{name: conf.Name},
 				AuthenticationDisabled: conf.AuthDisabled,
-				ResourcePacks:          resources,
+				ResourcePacks:          conf.Resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{pv486, v582.New(), v589.New()},
+				AcceptedProtocols:      []minecraft.Protocol{v649.New()},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {
@@ -74,7 +59,6 @@ func runServer() {
 		p.SetGameMode(world.GameModeCreative)
 		p.Inventory().Clear()
 		_, _ = p.Inventory().AddItem(item.NewStack(item.MusicDisc{DiscType: sound.DiscRelic()}, 1))
-		_, _ = p.Inventory().AddItem(item.NewStack(i, 1))
 	}) {
 	}
 }

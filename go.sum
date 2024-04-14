@@ -13,8 +13,8 @@ github.com/df-mc/goleveldb v1.1.9 h1:ihdosZyy5jkQKrxucTQmN90jq/2lUwQnJZjIYIC/9YU
 github.com/df-mc/goleveldb v1.1.9/go.mod h1:+NHCup03Sci5q84APIA21z3iPZCuk6m6ABtg4nANCSk=
 github.com/df-mc/worldupgrader v1.0.13 h1:97oSr83cHvU2j7iA7iPG6e+wWoGRCQ15c0H1U3q+bVM=
 github.com/df-mc/worldupgrader v1.0.13/go.mod h1:tsSOLTRm9mpG7VHvYpAjjZrkRHWmSbKZAm9bOLNnlDk=
-github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414144006-69cc9e3d50e1 h1:RMCQqqYiU9k3XEStkOL4JyX/BNnMhd3EPa3dweTOqUc=
-github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414144006-69cc9e3d50e1/go.mod h1:oxemgc6ghby4TsT0VZPkBR5lTvjvC8nrdSZHFcwEv6k=
+github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414174355-f004af9b69ac h1:Nt5QUo4H12AAV6fyG8VpwLhSVEeA4cv771ZNqmPK4qc=
+github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414174355-f004af9b69ac/go.mod h1:oxemgc6ghby4TsT0VZPkBR5lTvjvC8nrdSZHFcwEv6k=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-gl/mathgl v1.1.0 h1:0lzZ+rntPX3/oGrDzYGdowSLC2ky8Osirvf5uAwfIEA=
 github.com/go-gl/mathgl v1.1.0/go.mod h1:yhpkQzEiH9yPyxDUGzkmgScbaBVlhC06qodikEM0ZwQ=

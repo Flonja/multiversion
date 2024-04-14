@@ -36,4 +36,4 @@ require (
 
 replace github.com/sandertv/go-raknet => github.com/tedacmc/tedac-raknet v0.0.4
 
-replace github.com/sandertv/gophertunnel => github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414144006-69cc9e3d50e1
+replace github.com/sandertv/gophertunnel => github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414174355-f004af9b69ac
