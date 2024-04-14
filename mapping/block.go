@@ -101,6 +101,10 @@ func (m *DefaultBlockMapping) UpgradeBlockActorData(actorData map[string]any) {
 }
 
 func (m *DefaultBlockMapping) Adjust(entries []protocol.BlockEntry) {
+	if len(entries) == 0 {
+		return
+	}
+
 	customStates := convert(entries)
 	var newStates []blockupgrader.BlockState
 	for _, state := range customStates {
@@ -115,10 +119,7 @@ func (m *DefaultBlockMapping) Adjust(entries []protocol.BlockEntry) {
 	adjustedStates := append(m.states, customStates...)
 	sort.SliceStable(adjustedStates, func(i, j int) bool {
 		stateOne, stateTwo := adjustedStates[i], adjustedStates[j]
-		if stateOne.Name == stateTwo.Name {
-			return false
-		}
-		return fnv1.HashString64(stateOne.Name) < fnv1.HashString64(stateTwo.Name)
+		return stateOne.Name == stateTwo.Name && fnv1.HashString64(stateOne.Name) < fnv1.HashString64(stateTwo.Name)
 	})
 
 	m.stateRuntimeIDs = make(map[internal.StateHash]uint32, len(adjustedStates))
