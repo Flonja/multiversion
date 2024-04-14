@@ -635,8 +635,9 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 			for ind1, command := range pk.Commands {
 				for ind2, overload := range command.Overloads {
 					for ind3, parameter := range overload.Parameters {
-						parameterType := uint32(0)
-						switch parameter.Type {
+						parameterType := uint32(parameter.Type) | protocol.CommandArgValid
+
+						switch parameter.Type | protocol.CommandArgValid {
 						case protocol.CommandArgTypeCompareOperator:
 							parameterType = protocol.CommandArgTypeOperator
 						case protocol.CommandArgTypeTarget:
@@ -660,7 +661,7 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 						case protocol.CommandArgTypeCommand:
 							parameterType = 63
 						}
-						parameter.Type = parameterType
+						parameter.Type = parameterType | protocol.CommandArgValid
 						pk.Commands[ind1].Overloads[ind2].Parameters[ind3] = parameter
 					}
 				}
