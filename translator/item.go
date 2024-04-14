@@ -382,13 +382,13 @@ func (t *DefaultItemTranslator) DowngradeItemPackets(pks []packet.Packet, _ *min
 				}
 				pk.MaterialReducers[i] = recipe
 			}
-		case *packet.CraftingEvent:
-			pk.Input = lo.Map(pk.Input, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
-				return t.DowngradeItemInstance(item)
-			})
-			pk.Output = lo.Map(pk.Output, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
-				return t.DowngradeItemInstance(item)
-			})
+		//case *packet.CraftingEvent:
+		//	pk.Input = lo.Map(pk.Input, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
+		//		return t.DowngradeItemInstance(item)
+		//	})
+		//	pk.Output = lo.Map(pk.Output, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
+		//		return t.DowngradeItemInstance(item)
+		//	})
 		case *packet.PlayerAuthInput:
 			for i, action := range pk.ItemStackRequest.Actions {
 				if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {
@@ -603,13 +603,13 @@ func (t *DefaultItemTranslator) UpgradeItemPackets(pks []packet.Packet, _ *minec
 				}
 				pk.MaterialReducers[i] = recipe
 			}
-		case *packet.CraftingEvent:
-			pk.Input = lo.Map(pk.Input, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
-				return t.UpgradeItemInstance(item)
-			})
-			pk.Output = lo.Map(pk.Output, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
-				return t.UpgradeItemInstance(item)
-			})
+		//case *packet.CraftingEvent:
+		//	pk.Input = lo.Map(pk.Input, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
+		//		return t.UpgradeItemInstance(item)
+		//	})
+		//	pk.Output = lo.Map(pk.Output, func(item protocol.ItemInstance, _ int) protocol.ItemInstance {
+		//		return t.UpgradeItemInstance(item)
+		//	})
 		case *packet.PlayerAuthInput:
 			for i, action := range pk.ItemStackRequest.Actions {
 				if act, ok := action.(*protocol.CraftResultsDeprecatedStackRequestAction); ok {

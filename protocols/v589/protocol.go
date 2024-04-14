@@ -11,7 +11,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"io"
 )
 
 var (
@@ -21,6 +20,7 @@ var (
 	blockStateData []byte
 )
 
+// Protocol Deprecated due to Mojang not supporting <1.20
 type Protocol struct {
 	itemMapping     mapping.Item
 	blockMapping    mapping.Block
@@ -58,17 +58,11 @@ func (Protocol) Encryption(key [32]byte) packet.Encryption {
 	return packet.NewCTREncryption(key[:])
 }
 
-func (Protocol) NewReader(r interface {
-	io.Reader
-	io.ByteReader
-}, shieldID int32, enableLimits bool) protocol.IO {
+func (Protocol) NewReader(r minecraft.ByteReader, shieldID int32, enableLimits bool) protocol.IO {
 	return protocol.NewReader(r, shieldID, enableLimits)
 }
 
-func (Protocol) NewWriter(w interface {
-	io.Writer
-	io.ByteWriter
-}, shieldID int32) protocol.IO {
+func (Protocol) NewWriter(w minecraft.ByteWriter, shieldID int32) protocol.IO {
 	return protocol.NewWriter(w, shieldID)
 }
 

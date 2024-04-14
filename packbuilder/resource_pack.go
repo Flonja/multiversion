@@ -34,7 +34,7 @@ func BuildResourcePack(customItems []world.CustomItem, version string) (*resourc
 		copy(header[:], hash)
 		copy(module[:], hash[16:])
 		buildManifest(dir, version, header, module)
-		return resource.MustCompile(dir), true
+		return resource.MustReadPath(dir), true
 	}
 	return nil, false
 }
