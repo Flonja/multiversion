@@ -115,6 +115,8 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			EntityRuntimeID: pk.EntityRuntimeID,
 			Velocity:        pk.Velocity,
 		})
+	case *packet.ClientCacheStatus:
+		pk.Enabled = false
 	case *packet.AvailableCommands:
 		for ind1, command := range pk.Commands {
 			for ind2, overload := range command.Overloads {
