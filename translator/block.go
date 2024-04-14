@@ -41,6 +41,9 @@ func NewBlockTranslator(mapping mapping.Block, latestMapping mapping.Block) *Def
 }
 
 func (t *DefaultBlockTranslator) DowngradeBlockRuntimeID(input uint32) uint32 {
+	if t.latest == t.mapping {
+		return input
+	}
 	state, ok := t.latest.RuntimeIDToState(input)
 	if !ok {
 		return t.mapping.Air()
@@ -53,6 +56,9 @@ func (t *DefaultBlockTranslator) DowngradeBlockRuntimeID(input uint32) uint32 {
 }
 
 func (t *DefaultBlockTranslator) DowngradeChunk(input *chunk.Chunk, oldFormat bool) *chunk.Chunk {
+	if t.latest == t.mapping {
+		return input
+	}
 	start := 0
 	r := world.Overworld.Range()
 	if oldFormat {
@@ -82,12 +88,18 @@ func (t *DefaultBlockTranslator) DowngradeChunk(input *chunk.Chunk, oldFormat bo
 }
 
 func (t *DefaultBlockTranslator) DowngradeSubChunk(input *chunk.SubChunk) {
+	if t.latest == t.mapping {
+		return
+	}
 	for _, storage := range input.Layers() {
 		storage.Palette().Replace(t.DowngradeBlockRuntimeID)
 	}
 }
 
 func (t *DefaultBlockTranslator) downgradeEntityMetadata(metadata map[uint32]any) map[uint32]any {
+	if t.latest == t.mapping {
+		return metadata
+	}
 	if latestRID, ok := metadata[protocol.EntityDataKeyVariant]; ok {
 		metadata[protocol.EntityDataKeyVariant] = int32(t.DowngradeBlockRuntimeID(uint32(latestRID.(int32))))
 	}
@@ -95,6 +107,9 @@ func (t *DefaultBlockTranslator) downgradeEntityMetadata(metadata map[uint32]any
 }
 
 func (t *DefaultBlockTranslator) UpgradeBlockRuntimeID(input uint32) uint32 {
+	if t.latest == t.mapping {
+		return input
+	}
 	state, ok := t.mapping.RuntimeIDToState(input)
 	if !ok {
 		return t.latest.Air()
@@ -107,6 +122,9 @@ func (t *DefaultBlockTranslator) UpgradeBlockRuntimeID(input uint32) uint32 {
 }
 
 func (t *DefaultBlockTranslator) UpgradeChunk(input *chunk.Chunk, oldFormat bool) *chunk.Chunk {
+	if t.latest == t.mapping {
+		return input
+	}
 	start := 0
 	r := world.Overworld.Range()
 	if oldFormat {
@@ -133,12 +151,18 @@ func (t *DefaultBlockTranslator) UpgradeChunk(input *chunk.Chunk, oldFormat bool
 }
 
 func (t *DefaultBlockTranslator) UpgradeSubChunk(input *chunk.SubChunk) {
+	if t.latest == t.mapping {
+		return
+	}
 	for _, storage := range input.Layers() {
 		storage.Palette().Replace(t.UpgradeBlockRuntimeID)
 	}
 }
 
 func (t *DefaultBlockTranslator) upgradeEntityMetadata(metadata map[uint32]any) map[uint32]any {
+	if t.latest == t.mapping {
+		return metadata
+	}
 	if latestRID, ok := metadata[protocol.EntityDataKeyVariant]; ok {
 		metadata[protocol.EntityDataKeyVariant] = int32(t.UpgradeBlockRuntimeID(uint32(latestRID.(int32))))
 	}

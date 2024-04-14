@@ -58,6 +58,9 @@ func NewItemTranslator(mapping mapping.Item, latestMapping mapping.Item, blockMa
 }
 
 func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) protocol.ItemType {
+	if t.latest == t.mapping {
+		return input
+	}
 	if input.NetworkID == t.latest.Air() || input.NetworkID == 0 {
 		return protocol.ItemType{
 			NetworkID: t.mapping.Air(),
@@ -91,6 +94,9 @@ func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) proto
 }
 
 func (t *DefaultItemTranslator) DowngradeItemStack(input protocol.ItemStack) protocol.ItemStack {
+	if t.latest == t.mapping {
+		return input
+	}
 	input.ItemType = t.DowngradeItemType(input.ItemType)
 
 	blockRuntimeId := uint32(0)
@@ -120,6 +126,9 @@ func (t *DefaultItemTranslator) DowngradeItemInstance(input protocol.ItemInstanc
 }
 
 func (t *DefaultItemTranslator) DowngradeItemDescriptor(input protocol.ItemDescriptor) protocol.ItemDescriptor {
+	if t.latest == t.mapping {
+		return input
+	}
 	switch descriptor := input.(type) {
 	case *protocol.InvalidItemDescriptor:
 		return input
@@ -166,6 +175,9 @@ func (t *DefaultItemTranslator) DowngradeItemDescriptorCount(input protocol.Item
 }
 
 func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protocol.ItemType {
+	if t.latest == t.mapping {
+		return input
+	}
 	if input.NetworkID == t.mapping.Air() || input.NetworkID == 0 {
 		return protocol.ItemType{
 			NetworkID: t.latest.Air(),
@@ -193,6 +205,9 @@ func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protoco
 }
 
 func (t *DefaultItemTranslator) UpgradeItemStack(input protocol.ItemStack) protocol.ItemStack {
+	if t.latest == t.mapping {
+		return input
+	}
 	input.ItemType = t.UpgradeItemType(input.ItemType)
 
 	blockRuntimeId := uint32(0)
@@ -219,6 +234,9 @@ func (t *DefaultItemTranslator) UpgradeItemInstance(input protocol.ItemInstance)
 }
 
 func (t *DefaultItemTranslator) UpgradeItemDescriptor(input protocol.ItemDescriptor) protocol.ItemDescriptor {
+	if t.latest == t.mapping {
+		return input
+	}
 	switch descriptor := input.(type) {
 	case *protocol.InvalidItemDescriptor:
 		return input
