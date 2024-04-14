@@ -1,6 +1,7 @@
 package v486
 
 import (
+	"github.com/df-mc/worldupgrader/itemupgrader"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/v486/types"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -71,7 +72,7 @@ func downgradeCraftingDescription(descriptor protocol.ItemDescriptor, m mapping.
 		networkId = int32(descriptor.NetworkID)
 		metadata = int32(descriptor.MetadataValue)
 	case *protocol.DeferredItemDescriptor:
-		if rid, ok := m.ItemNameToRuntimeID(descriptor.Name); ok {
+		if rid, ok := m.ItemNameToRuntimeID(itemupgrader.ItemMeta{Name: descriptor.Name, Meta: descriptor.MetadataValue}); ok {
 			networkId = rid
 			metadata = int32(descriptor.MetadataValue)
 		}

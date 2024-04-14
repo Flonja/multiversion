@@ -2,6 +2,7 @@ package v582
 
 import (
 	_ "embed"
+	"github.com/df-mc/worldupgrader/itemupgrader"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/packbuilder"
 	"github.com/flonja/multiversion/protocols/latest"
@@ -33,12 +34,12 @@ type Protocol struct {
 }
 
 func New() *Protocol {
-	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 111)
+	itemMapping := mapping.NewItemMapping(itemRuntimeIDData)
 	blockMapping := mapping.NewBlockMapping(blockStateData)
 	latestBlockMapping := latest.NewBlockMapping()
 
 	itemTranslator := translator.NewItemTranslator(itemMapping, latest.NewItemMapping(), blockMapping, latestBlockMapping)
-	itemTranslator.Register(items.DiscRelic{}, "minecraft:music_disc_relic")
+	itemTranslator.Register(items.DiscRelic{}, itemupgrader.ItemMeta{Name: "minecraft:music_disc_relic"})
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
 		itemTranslator:  itemTranslator,
 		blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}

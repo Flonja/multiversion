@@ -35,7 +35,7 @@ type Protocol struct {
 func New() *Protocol {
 	// TODOn't: add custom block/item replacements (aka make it cool)
 
-	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 111)
+	itemMapping := mapping.NewItemMapping(itemRuntimeIDData)
 	blockMapping := mapping.NewBlockMapping(blockStateData).WithBlockActorRemapper(downgradeBlockActorData, upgradeBlockActorData)
 	latestBlockMapping := latest.NewBlockMapping()
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,

@@ -29,7 +29,7 @@ type Protocol struct {
 }
 
 func New() *Protocol {
-	itemMapping := mapping.NewItemMapping(itemRuntimeIDData, 121)
+	itemMapping := mapping.NewItemMapping(itemRuntimeIDData)
 	blockMapping := mapping.NewBlockMapping(blockStateData)
 	latestBlockMapping := latest.NewBlockMapping()
 	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
