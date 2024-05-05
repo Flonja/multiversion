@@ -53,7 +53,12 @@ func (m *DefaultItemMapping) ItemRuntimeIDToName(runtimeID int32) (itemMeta item
 }
 
 func (m *DefaultItemMapping) ItemNameToRuntimeID(itemMeta itemupgrader.ItemMeta) (runtimeID int32, found bool) {
-	rid, ok := m.itemNamesToRuntimeIDs[itemupgrader.Upgrade(itemMeta)]
+	itemMeta = itemupgrader.Upgrade(itemMeta)
+	rid, ok := m.itemNamesToRuntimeIDs[itemMeta]
+	if !ok {
+		itemMeta.Meta = 0
+		rid, ok = m.itemNamesToRuntimeIDs[itemMeta]
+	}
 	return rid, ok
 }
 

@@ -15,6 +15,11 @@ func BlockStateFromItemName(itemName string, metadata uint32) (blockupgrader.Blo
 		Name:     blockId,
 		Metadata: metadata,
 	}]
+	if !ok {
+		blockState, ok = blockStateMap[stateHash{
+			Name: blockId,
+		}]
+	}
 	return blockState, ok
 }
 

@@ -11,6 +11,7 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
+	"strings"
 )
 
 type ItemTranslator interface {
@@ -77,6 +78,8 @@ func (t *DefaultItemTranslator) DowngradeItemType(input protocol.ItemType) proto
 				NetworkID: t.mapping.Air(),
 			}
 		}
+		itemMeta.Meta = int16(metadata)
+		itemMeta = itemupgrader.Upgrade(itemMeta)
 
 		networkID, ok = t.mapping.ItemNameToRuntimeID(itemMeta)
 		if !ok {
@@ -102,9 +105,12 @@ func (t *DefaultItemTranslator) DowngradeItemStack(input protocol.ItemStack) pro
 	blockRuntimeId := uint32(0)
 	if input.NetworkID != t.mapping.Air() {
 		itemMeta, _ := t.mapping.ItemRuntimeIDToName(input.NetworkID)
+		itemMeta.Meta = int16(input.MetadataValue)
+		if strings.Contains(itemMeta.Name, "enchanted_book") {
+			fmt.Printf("%#v\n", input)
+		}
 		if latestBlockState, ok := item.BlockStateFromItem(itemMeta); ok {
-			var found bool
-			if blockRuntimeId, found = t.blockMapping.StateToRuntimeID(latestBlockState); !found {
+			if blockRuntimeId, ok = t.blockMapping.StateToRuntimeID(latestBlockState); !ok {
 				blockRuntimeId = t.blockMapping.Air()
 			}
 		}
@@ -150,6 +156,9 @@ func (t *DefaultItemTranslator) DowngradeItemDescriptor(input protocol.ItemDescr
 		itemType := t.DowngradeItemType(protocol.ItemType{NetworkID: rid, MetadataValue: uint32(descriptor.MetadataValue)})
 		descriptor.MetadataValue = int16(itemType.MetadataValue)
 		if itemMeta, ok := t.mapping.ItemRuntimeIDToName(itemType.NetworkID); ok {
+			itemMeta.Meta = descriptor.MetadataValue
+			itemMeta = itemupgrader.Upgrade(itemMeta)
+
 			descriptor.Name = itemMeta.Name
 			descriptor.MetadataValue = itemMeta.Meta
 		}
@@ -189,6 +198,8 @@ func (t *DefaultItemTranslator) UpgradeItemType(input protocol.ItemType) protoco
 	var ok bool
 	if networkID, ok = t.customToOriginal[input.NetworkID]; !ok {
 		itemMeta, _ := t.mapping.ItemRuntimeIDToName(input.NetworkID)
+		itemMeta.Meta = int16(metadata)
+		itemMeta = itemupgrader.Upgrade(itemMeta)
 		networkID, ok = t.latest.ItemNameToRuntimeID(itemMeta)
 		if !ok {
 			networkID, _ = t.latest.ItemNameToRuntimeID(itemupgrader.ItemMeta{Name: "minecraft:info_update"})
@@ -213,6 +224,7 @@ func (t *DefaultItemTranslator) UpgradeItemStack(input protocol.ItemStack) proto
 	blockRuntimeId := uint32(0)
 	if input.NetworkID != t.latest.Air() {
 		itemMeta, _ := t.latest.ItemRuntimeIDToName(input.NetworkID)
+		itemMeta.Meta = int16(input.MetadataValue)
 		if latestBlockState, ok := item.BlockStateFromItem(itemMeta); ok {
 			blockRuntimeId, _ = t.blockMappingLatest.StateToRuntimeID(latestBlockState)
 		}
@@ -258,6 +270,9 @@ func (t *DefaultItemTranslator) UpgradeItemDescriptor(input protocol.ItemDescrip
 		itemType := t.UpgradeItemType(protocol.ItemType{NetworkID: rid, MetadataValue: uint32(descriptor.MetadataValue)})
 		descriptor.MetadataValue = int16(itemType.MetadataValue)
 		if itemMeta, ok := t.latest.ItemRuntimeIDToName(itemType.NetworkID); ok {
+			itemMeta.Meta = descriptor.MetadataValue
+			itemMeta = itemupgrader.Upgrade(itemMeta)
+
 			descriptor.Name = itemMeta.Name
 			descriptor.MetadataValue = itemMeta.Meta
 		}

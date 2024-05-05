@@ -12,19 +12,26 @@ import (
 )
 
 var (
+	//go:embed item_runtime_ids.nbt
+	itemRuntimeIDData []byte
 	//go:embed block_states.nbt
 	blockStateData []byte
 )
 
 type Protocol struct {
+	itemMapping     mapping.Item
 	blockMapping    mapping.Block
+	itemTranslator  translator.ItemTranslator
 	blockTranslator translator.BlockTranslator
 }
 
 func New() *Protocol {
+	itemMapping := mapping.NewItemMapping(itemRuntimeIDData)
 	blockMapping := mapping.NewBlockMapping(blockStateData)
 	latestBlockMapping := latest.NewBlockMapping()
-	return &Protocol{blockMapping: blockMapping, blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}
+	return &Protocol{itemMapping: itemMapping, blockMapping: blockMapping,
+		itemTranslator:  translator.NewItemTranslator(itemMapping, latest.NewItemMapping(), blockMapping, latestBlockMapping),
+		blockTranslator: translator.NewBlockTranslator(blockMapping, latestBlockMapping)}
 }
 
 func (p Protocol) ID() int32 {
@@ -62,6 +69,7 @@ func (Protocol) NewWriter(w minecraft.ByteWriter, shieldID int32) protocol.IO {
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
 	var newPks []packet.Packet
+
 	switch pk := pk.(type) {
 	case *legacypacket.LecternUpdate:
 		if pk.DropBook {
@@ -152,11 +160,11 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 		newPks = append(newPks, pk)
 	}
 
-	return p.blockTranslator.UpgradeBlockPackets(newPks, conn)
+	return p.blockTranslator.UpgradeBlockPackets(p.itemTranslator.UpgradeItemPackets(newPks, conn), conn)
 }
 
 func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (result []packet.Packet) {
-	result = p.blockTranslator.DowngradeBlockPackets([]packet.Packet{pk}, conn)
+	result = p.blockTranslator.DowngradeBlockPackets(p.itemTranslator.DowngradeItemPackets([]packet.Packet{pk}, conn), conn)
 
 	for i, pk := range result {
 		switch pk := pk.(type) {

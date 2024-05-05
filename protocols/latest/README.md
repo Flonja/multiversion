@@ -1,0 +1,2 @@
+[block_states.nbt](./block_state_meta_map.json): From [df-mc/dragonfly](https://github.com/df-mc/dragonfly/blob/master/server/world/block_states.nbt)<br>
+[item_runtime_ids.nbt](./block_state_meta_map.json): From [df-mc/dragonfly](https://github.com/df-mc/dragonfly/blob/master/server/world/item_runtime_ids.nbt)
