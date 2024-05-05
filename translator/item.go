@@ -11,7 +11,6 @@ import (
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
 	"github.com/sandertv/gophertunnel/minecraft/protocol/packet"
-	"strings"
 )
 
 type ItemTranslator interface {
@@ -106,9 +105,6 @@ func (t *DefaultItemTranslator) DowngradeItemStack(input protocol.ItemStack) pro
 	if input.NetworkID != t.mapping.Air() {
 		itemMeta, _ := t.mapping.ItemRuntimeIDToName(input.NetworkID)
 		itemMeta.Meta = int16(input.MetadataValue)
-		if strings.Contains(itemMeta.Name, "enchanted_book") {
-			fmt.Printf("%#v\n", input)
-		}
 		if latestBlockState, ok := item.BlockStateFromItem(itemMeta); ok {
 			if blockRuntimeId, ok = t.blockMapping.StateToRuntimeID(latestBlockState); !ok {
 				blockRuntimeId = t.blockMapping.Air()
