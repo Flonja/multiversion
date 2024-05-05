@@ -11,6 +11,7 @@ import (
 	"github.com/df-mc/dragonfly/server/world/sound"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
 	v649 "github.com/flonja/multiversion/protocols/v649"
+	v662 "github.com/flonja/multiversion/protocols/v662"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sirupsen/logrus"
 )
@@ -37,7 +38,7 @@ func runServer() {
 				ResourcePacks:          conf.Resources,
 				Biomes:                 biomes(),
 				TexturePacksRequired:   conf.ResourcesRequired,
-				AcceptedProtocols:      []minecraft.Protocol{v649.New()},
+				AcceptedProtocols:      []minecraft.Protocol{v662.New(), v649.New()},
 			}
 			l, err := cfg.Listen("raknet", uc.Network.Address)
 			if err != nil {

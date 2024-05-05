@@ -1,12 +1,10 @@
-package v649
+package v662
 
 import (
 	_ "embed"
 	"github.com/flonja/multiversion/mapping"
 	"github.com/flonja/multiversion/protocols/latest"
-	legacypacket "github.com/flonja/multiversion/protocols/v649/packet"
-	v662 "github.com/flonja/multiversion/protocols/v662"
-	legacypacket_v662 "github.com/flonja/multiversion/protocols/v662/packet"
+	legacypacket "github.com/flonja/multiversion/protocols/v662/packet"
 	"github.com/flonja/multiversion/translator"
 	"github.com/sandertv/gophertunnel/minecraft"
 	"github.com/sandertv/gophertunnel/minecraft/protocol"
@@ -37,11 +35,11 @@ func New() *Protocol {
 }
 
 func (p Protocol) ID() int32 {
-	return 649
+	return 662
 }
 
 func (p Protocol) Ver() string {
-	return "1.20.62"
+	return "1.20.73"
 }
 
 func (Protocol) Packets(_ bool) packet.Pool {
@@ -49,19 +47,13 @@ func (Protocol) Packets(_ bool) packet.Pool {
 	for k, v := range packet.NewServerPool() {
 		pool[k] = v
 	}
-	pool[packet.IDLecternUpdate] = func() packet.Packet { return &legacypacket.LecternUpdate{} }
-	pool[packet.IDMobEffect] = func() packet.Packet { return &legacypacket.MobEffect{} }
+	pool[packet.IDClientBoundDebugRenderer] = func() packet.Packet { return &legacypacket.ClientBoundDebugRenderer{} }
+	pool[packet.IDCorrectPlayerMovePrediction] = func() packet.Packet { return &legacypacket.CorrectPlayerMovePrediction{} }
 	pool[packet.IDPlayerAuthInput] = func() packet.Packet { return &legacypacket.PlayerAuthInput{} }
-	pool[packet.IDResourcePacksInfo] = func() packet.Packet { return &legacypacket.ResourcePacksInfo{} }
-	pool[packet.IDActorEvent] = func() packet.Packet { return &legacypacket.SetActorMotion{} }
-
-	// v662
-	pool[packet.IDClientBoundDebugRenderer] = func() packet.Packet { return &legacypacket_v662.ClientBoundDebugRenderer{} }
-	pool[packet.IDCorrectPlayerMovePrediction] = func() packet.Packet { return &legacypacket_v662.CorrectPlayerMovePrediction{} }
-	pool[packet.IDResourcePackStack] = func() packet.Packet { return &legacypacket_v662.ResourcePackStack{} }
-	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket_v662.StartGame{} }
-	pool[packet.IDUpdateBlockSynced] = func() packet.Packet { return &legacypacket_v662.UpdateBlockSynced{} }
-	pool[packet.IDUpdatePlayerGameType] = func() packet.Packet { return &legacypacket_v662.UpdatePlayerGameType{} }
+	pool[packet.IDResourcePackStack] = func() packet.Packet { return &legacypacket.ResourcePackStack{} }
+	pool[packet.IDStartGame] = func() packet.Packet { return &legacypacket.StartGame{} }
+	pool[packet.IDUpdateBlockSynced] = func() packet.Packet { return &legacypacket.UpdateBlockSynced{} }
+	pool[packet.IDUpdatePlayerGameType] = func() packet.Packet { return &legacypacket.UpdatePlayerGameType{} }
 	return pool
 }
 
@@ -70,34 +62,35 @@ func (Protocol) Encryption(key [32]byte) packet.Encryption {
 }
 
 func (Protocol) NewReader(r minecraft.ByteReader, shieldID int32, enableLimits bool) protocol.IO {
-	return v662.NewReader(protocol.NewReader(r, shieldID, enableLimits))
+	return NewReader(protocol.NewReader(r, shieldID, enableLimits))
 }
 
 func (Protocol) NewWriter(w minecraft.ByteWriter, shieldID int32) protocol.IO {
-	return v662.NewWriter(protocol.NewWriter(w, shieldID))
+	return NewWriter(protocol.NewWriter(w, shieldID))
 }
 
 func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []packet.Packet {
 	var newPks []packet.Packet
 
 	switch pk := pk.(type) {
-	case *legacypacket.LecternUpdate:
-		if pk.DropBook {
-			break
-		}
-		newPks = append(newPks, &packet.LecternUpdate{
-			Page:      pk.Page,
-			PageCount: pk.PageCount,
-			Position:  pk.Position,
+	case *legacypacket.ClientBoundDebugRenderer:
+		newPks = append(newPks, &packet.ClientBoundDebugRenderer{
+			Type:     pk.Type,
+			Text:     pk.Text,
+			Position: pk.Position,
+			Red:      pk.Red,
+			Green:    pk.Green,
+			Blue:     pk.Blue,
+			Alpha:    pk.Alpha,
+			Duration: pk.Duration,
 		})
-	case *legacypacket.MobEffect:
-		newPks = append(newPks, &packet.MobEffect{
-			EntityRuntimeID: pk.EntityRuntimeID,
-			Operation:       pk.Operation,
-			EffectType:      pk.EffectType,
-			Amplifier:       pk.Amplifier,
-			Particles:       pk.Particles,
-			Duration:        pk.Duration,
+	case *legacypacket.CorrectPlayerMovePrediction:
+		newPks = append(newPks, &packet.CorrectPlayerMovePrediction{
+			PredictionType: pk.PredictionType,
+			Position:       pk.Position,
+			Delta:          pk.Delta,
+			OnGround:       pk.OnGround,
+			Tick:           pk.Tick,
 		})
 	case *legacypacket.PlayerAuthInput:
 		newPks = append(newPks, &packet.PlayerAuthInput{
@@ -117,43 +110,10 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			ItemStackRequest:       pk.ItemStackRequest,
 			BlockActions:           pk.BlockActions,
 			ClientPredictedVehicle: pk.ClientPredictedVehicle,
+			VehicleRotation:        pk.VehicleRotation,
 			AnalogueMoveVector:     pk.AnalogueMoveVector,
 		})
-	case *legacypacket.ResourcePacksInfo:
-		newPks = append(newPks, &packet.ResourcePacksInfo{
-			TexturePackRequired: pk.TexturePackRequired,
-			HasScripts:          pk.HasScripts,
-			BehaviourPacks:      pk.BehaviourPacks,
-			TexturePacks:        pk.TexturePacks,
-			ForcingServerPacks:  pk.ForcingServerPacks,
-			PackURLs:            pk.PackURLs,
-		})
-	case *legacypacket.SetActorMotion:
-		newPks = append(newPks, &packet.SetActorMotion{
-			EntityRuntimeID: pk.EntityRuntimeID,
-			Velocity:        pk.Velocity,
-		})
-	case *legacypacket_v662.ClientBoundDebugRenderer:
-		newPks = append(newPks, &packet.ClientBoundDebugRenderer{
-			Type:     pk.Type,
-			Text:     pk.Text,
-			Position: pk.Position,
-			Red:      pk.Red,
-			Green:    pk.Green,
-			Blue:     pk.Blue,
-			Alpha:    pk.Alpha,
-			Duration: pk.Duration,
-		})
-	case *legacypacket_v662.CorrectPlayerMovePrediction:
-		newPks = append(newPks, &packet.CorrectPlayerMovePrediction{
-			PredictionType: pk.PredictionType,
-			Position:       pk.Position,
-			Delta:          pk.Delta,
-			OnGround:       pk.OnGround,
-			Tick:           pk.Tick,
-		})
-
-	case *legacypacket_v662.ResourcePackStack:
+	case *legacypacket.ResourcePackStack:
 		newPks = append(newPks, &packet.ResourcePackStack{
 			TexturePackRequired:          pk.TexturePackRequired,
 			BehaviourPacks:               pk.BehaviourPacks,
@@ -162,7 +122,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			Experiments:                  pk.Experiments,
 			ExperimentsPreviouslyToggled: pk.ExperimentsPreviouslyToggled,
 		})
-	case *legacypacket_v662.StartGame:
+	case *legacypacket.StartGame:
 		newPks = append(newPks, &packet.StartGame{
 			EntityUniqueID:                 pk.EntityUniqueID,
 			EntityRuntimeID:                pk.EntityRuntimeID,
@@ -239,7 +199,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			UseBlockNetworkIDHashes:        pk.UseBlockNetworkIDHashes,
 			ServerAuthoritativeSound:       pk.ServerAuthoritativeSound,
 		})
-	case *legacypacket_v662.UpdateBlockSynced:
+	case *legacypacket.UpdateBlockSynced:
 		newPks = append(newPks, &packet.UpdateBlockSynced{
 			Position:          pk.Position,
 			NewBlockRuntimeID: pk.NewBlockRuntimeID,
@@ -248,42 +208,11 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			EntityUniqueID:    uint64(pk.EntityUniqueID),
 			TransitionType:    pk.TransitionType,
 		})
-	case *legacypacket_v662.UpdatePlayerGameType:
+	case *legacypacket.UpdatePlayerGameType:
 		newPks = append(newPks, &packet.UpdatePlayerGameType{
 			GameType:       pk.GameType,
 			PlayerUniqueID: pk.PlayerUniqueID,
 		})
-	case *packet.AvailableCommands:
-		for ind1, command := range pk.Commands {
-			for ind2, overload := range command.Overloads {
-				for ind3, parameter := range overload.Parameters {
-					parameterType := uint32(parameter.Type) | protocol.CommandArgValid
-
-					switch parameter.Type | protocol.CommandArgValid {
-					case 43:
-						parameterType = protocol.CommandArgTypeEquipmentSlots
-					case 44:
-						parameterType = protocol.CommandArgTypeString
-					case 52:
-						parameterType = protocol.CommandArgTypeBlockPosition
-					case 53:
-						parameterType = protocol.CommandArgTypePosition
-					case 55:
-						parameterType = protocol.CommandArgTypeMessage
-					case 58:
-						parameterType = protocol.CommandArgTypeRawText
-					case 62:
-						parameterType = protocol.CommandArgTypeJSON
-					case 71:
-						parameterType = protocol.CommandArgTypeBlockStates
-					case 74:
-						parameterType = protocol.CommandArgTypeCommand
-					}
-					parameter.Type = parameterType | protocol.CommandArgValid
-					pk.Commands[ind1].Overloads[ind2].Parameters[ind3] = parameter
-				}
-			}
-		}
 	case *packet.ClientCacheStatus:
 		pk.Enabled = false
 	default:
@@ -298,20 +227,24 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 
 	for i, pk := range result {
 		switch pk := pk.(type) {
-		case *packet.LecternUpdate:
-			result[i] = &legacypacket.LecternUpdate{
-				Page:      pk.Page,
-				PageCount: pk.PageCount,
-				Position:  pk.Position,
+		case *packet.ClientBoundDebugRenderer:
+			result[i] = &legacypacket.ClientBoundDebugRenderer{
+				Type:     pk.Type,
+				Text:     pk.Text,
+				Position: pk.Position,
+				Red:      pk.Red,
+				Green:    pk.Green,
+				Blue:     pk.Blue,
+				Alpha:    pk.Alpha,
+				Duration: pk.Duration,
 			}
-		case *packet.MobEffect:
-			result[i] = &legacypacket.MobEffect{
-				EntityRuntimeID: pk.EntityRuntimeID,
-				Operation:       pk.Operation,
-				EffectType:      pk.EffectType,
-				Amplifier:       pk.Amplifier,
-				Particles:       pk.Particles,
-				Duration:        pk.Duration,
+		case *packet.CorrectPlayerMovePrediction:
+			result[i] = &legacypacket.CorrectPlayerMovePrediction{
+				PredictionType: pk.PredictionType,
+				Position:       pk.Position,
+				Delta:          pk.Delta,
+				OnGround:       pk.OnGround,
+				Tick:           pk.Tick,
 			}
 		case *packet.PlayerAuthInput:
 			result[i] = &legacypacket.PlayerAuthInput{
@@ -331,43 +264,11 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				ItemStackRequest:       pk.ItemStackRequest,
 				BlockActions:           pk.BlockActions,
 				ClientPredictedVehicle: pk.ClientPredictedVehicle,
+				VehicleRotation:        pk.VehicleRotation,
 				AnalogueMoveVector:     pk.AnalogueMoveVector,
 			}
-		case *packet.ResourcePacksInfo:
-			result[i] = &legacypacket.ResourcePacksInfo{
-				TexturePackRequired: pk.TexturePackRequired,
-				HasScripts:          pk.HasScripts,
-				BehaviourPacks:      pk.BehaviourPacks,
-				TexturePacks:        pk.TexturePacks,
-				ForcingServerPacks:  pk.ForcingServerPacks,
-				PackURLs:            pk.PackURLs,
-			}
-		case *packet.SetActorMotion:
-			result[i] = &legacypacket.SetActorMotion{
-				EntityRuntimeID: pk.EntityRuntimeID,
-				Velocity:        pk.Velocity,
-			}
-		case *packet.ClientBoundDebugRenderer:
-			result[i] = &legacypacket_v662.ClientBoundDebugRenderer{
-				Type:     pk.Type,
-				Text:     pk.Text,
-				Position: pk.Position,
-				Red:      pk.Red,
-				Green:    pk.Green,
-				Blue:     pk.Blue,
-				Alpha:    pk.Alpha,
-				Duration: pk.Duration,
-			}
-		case *packet.CorrectPlayerMovePrediction:
-			result[i] = &legacypacket_v662.CorrectPlayerMovePrediction{
-				PredictionType: pk.PredictionType,
-				Position:       pk.Position,
-				Delta:          pk.Delta,
-				OnGround:       pk.OnGround,
-				Tick:           pk.Tick,
-			}
 		case *packet.ResourcePackStack:
-			result[i] = &legacypacket_v662.ResourcePackStack{
+			result[i] = &legacypacket.ResourcePackStack{
 				TexturePackRequired:          pk.TexturePackRequired,
 				BehaviourPacks:               pk.BehaviourPacks,
 				TexturePacks:                 pk.TexturePacks,
@@ -376,7 +277,7 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				ExperimentsPreviouslyToggled: pk.ExperimentsPreviouslyToggled,
 			}
 		case *packet.StartGame:
-			result[i] = &legacypacket_v662.StartGame{
+			result[i] = &legacypacket.StartGame{
 				EntityUniqueID:                 pk.EntityUniqueID,
 				EntityRuntimeID:                pk.EntityRuntimeID,
 				PlayerGameMode:                 pk.PlayerGameMode,
@@ -453,7 +354,7 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				ServerAuthoritativeSound:       pk.ServerAuthoritativeSound,
 			}
 		case *packet.UpdateBlockSynced:
-			result[i] = &legacypacket_v662.UpdateBlockSynced{
+			result[i] = &legacypacket.UpdateBlockSynced{
 				Position:          pk.Position,
 				NewBlockRuntimeID: pk.NewBlockRuntimeID,
 				Flags:             pk.Flags,
@@ -462,42 +363,10 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 				TransitionType:    pk.TransitionType,
 			}
 		case *packet.UpdatePlayerGameType:
-			result[i] = &legacypacket_v662.UpdatePlayerGameType{
+			result[i] = &legacypacket.UpdatePlayerGameType{
 				GameType:       pk.GameType,
 				PlayerUniqueID: pk.PlayerUniqueID,
 			}
-		case *packet.AvailableCommands:
-			for ind1, command := range pk.Commands {
-				for ind2, overload := range command.Overloads {
-					for ind3, parameter := range overload.Parameters {
-						parameterType := uint32(parameter.Type) | protocol.CommandArgValid
-
-						switch parameter.Type | protocol.CommandArgValid {
-						case protocol.CommandArgTypeEquipmentSlots:
-							parameterType = 43
-						case protocol.CommandArgTypeString:
-							parameterType = 44
-						case protocol.CommandArgTypeBlockPosition:
-							parameterType = 52
-						case protocol.CommandArgTypePosition:
-							parameterType = 53
-						case protocol.CommandArgTypeMessage:
-							parameterType = 55
-						case protocol.CommandArgTypeRawText:
-							parameterType = 58
-						case protocol.CommandArgTypeJSON:
-							parameterType = 62
-						case protocol.CommandArgTypeBlockStates:
-							parameterType = 71
-						case protocol.CommandArgTypeCommand:
-							parameterType = 74
-						}
-						parameter.Type = parameterType | protocol.CommandArgValid
-						pk.Commands[ind1].Overloads[ind2].Parameters[ind3] = parameter
-					}
-				}
-			}
-			result[i] = pk
 		}
 	}
 

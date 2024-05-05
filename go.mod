@@ -3,19 +3,19 @@ module github.com/flonja/multiversion
 go 1.21
 
 require (
-	github.com/df-mc/dragonfly v0.9.15
-	github.com/df-mc/worldupgrader v1.0.13
+	github.com/df-mc/dragonfly v0.9.16-0.20240429014602-97fdfe269e3c
+	github.com/df-mc/worldupgrader v1.0.14
 	github.com/go-gl/mathgl v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/samber/lo v1.39.0
 	github.com/sandertv/go-raknet v1.12.0
-	github.com/sandertv/gophertunnel v1.36.0
+	github.com/sandertv/gophertunnel v1.37.0
 	github.com/segmentio/fasthash v1.0.3
 	github.com/sirupsen/logrus v1.9.3
-	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8
-	golang.org/x/image v0.15.0
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
+	golang.org/x/image v0.16.0
+	golang.org/x/oauth2 v0.20.0
 )
 
 require (
@@ -30,10 +30,10 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 )
 
 replace github.com/sandertv/go-raknet => github.com/tedacmc/tedac-raknet v0.0.4
 
-replace github.com/sandertv/gophertunnel => github.com/flonja/tedac-gophertunnel v0.0.12-0.20240414174355-f004af9b69ac
+replace github.com/sandertv/gophertunnel => github.com/flonja/tedac-gophertunnel v0.0.12-0.20240505153322-942ed8d8e2c6
