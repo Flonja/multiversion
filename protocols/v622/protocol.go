@@ -53,7 +53,7 @@ func (Protocol) Packets(_ bool) packet.Pool {
 	for k, v := range packet.NewServerPool() {
 		pool[k] = v
 	}
-	pool[packet.IDShowStoreOffer] = func() packet.Packet { return &legacypacket_v630.PlayerList{} }
+	pool[packet.IDShowStoreOffer] = func() packet.Packet { return &legacypacket.ShowStoreOffer{} }
 
 	// v630
 	pool[packet.IDCorrectPlayerMovePrediction] = func() packet.Packet { return &legacypacket_v630.CorrectPlayerMovePrediction{} }
