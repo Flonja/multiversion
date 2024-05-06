@@ -2,8 +2,9 @@
 A multiversion Gophertunnel library intended to be used on Dragonfly.
 
 ### Working versions
-- 1.20.6* (`v649`)
 - 1.20.7* (`v671`)
+- 1.20.6* (`v649`)
+- 1.20.5* (`v630`)
 
 ### Previous versions
 Due to Mojang's decision to revoke old cryptographic keys these will not be updated anymore.
