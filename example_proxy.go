@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	_ "github.com/flonja/multiversion/protocols" // VERY IMPORTANT
-	v589 "github.com/flonja/multiversion/protocols/v589"
 	v618 "github.com/flonja/multiversion/protocols/v618"
 	v622 "github.com/flonja/multiversion/protocols/v622"
 	v630 "github.com/flonja/multiversion/protocols/v630"
@@ -31,7 +30,6 @@ func runProxy(config config) {
 	listener, err := minecraft.ListenConfig{
 		StatusProvider: p,
 		AcceptedProtocols: []minecraft.Protocol{
-			v589.New(),
 			v618.New(),
 			v622.New(),
 			v630.New(),
