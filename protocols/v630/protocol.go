@@ -126,7 +126,7 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 	case *legacypacket.PlayerList:
 		newPks = append(newPks, &packet.PlayerList{
 			ActionType: pk.ActionType,
-			Entries: lo.Map(pk.Entries, func(item types.PlayerListEntry, index int) protocol.PlayerListEntry {
+			Entries: lo.Map(pk.Entries, func(item types.PlayerListEntry, _ int) protocol.PlayerListEntry {
 				return protocol.PlayerListEntry{
 					UUID:           item.UUID,
 					EntityUniqueID: item.EntityUniqueID,
@@ -374,7 +374,7 @@ func (p Protocol) ConvertFromLatest(pk packet.Packet, conn *minecraft.Conn) (res
 		case *packet.PlayerList:
 			result[i] = &legacypacket.PlayerList{
 				ActionType: pk.ActionType,
-				Entries: lo.Map(pk.Entries, func(item protocol.PlayerListEntry, index int) types.PlayerListEntry {
+				Entries: lo.Map(pk.Entries, func(item protocol.PlayerListEntry, _ int) types.PlayerListEntry {
 					return types.PlayerListEntry{
 						UUID:           item.UUID,
 						EntityUniqueID: item.EntityUniqueID,
