@@ -152,7 +152,6 @@ func (p Protocol) ConvertToLatest(pk packet.Packet, conn *minecraft.Conn) []pack
 			OnGround:       pk.OnGround,
 			Tick:           pk.Tick,
 		})
-
 	case *legacypacket_v662.ResourcePackStack:
 		newPks = append(newPks, &packet.ResourcePackStack{
 			TexturePackRequired:          pk.TexturePackRequired,
