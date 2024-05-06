@@ -7,6 +7,7 @@ A multiversion Gophertunnel library intended to be used on Dragonfly.
 - 1.20.6* (`v649`)
 - 1.20.5* (`v630`)
 - 1.20.4* (`v622`)
+- 1.20.3* (`v618`)
 
 ### Previous versions
 Due to Mojang's decision to revoke old cryptographic keys these will not be updated anymore.
